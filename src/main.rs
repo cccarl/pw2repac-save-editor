@@ -75,7 +75,7 @@ fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_resizable(true)
-            .with_inner_size([800., 600.]),
+            .with_inner_size([900., 600.]),
         ..Default::default()
     };
 
@@ -352,7 +352,8 @@ impl App {
                             val_int.to_string()
                         }
                         save_data_info::SaveDataIntType::Arrayi32(_)
-                        | save_data_info::SaveDataIntType::Arrayu8(_) => "list".to_string(),
+                        | save_data_info::SaveDataIntType::Arrayu8(_)
+                        | save_data_info::SaveDataIntType::Arrayu32(_) => "list".to_string(),
                         save_data_info::SaveDataIntType::ArrayText(_) => {
                             get_text_value_from_save_data(
                                 save_data_guard.to_vec(),

@@ -12,7 +12,30 @@ pub enum SaveDataVar {
     TimeTrialList,
     TimeTrialCoopList,
     FriendsFlagList,
+    FriendsTalkList,
+    StageMazeFlagList,
+    LastStageId,
+    LastGameModeId,
     Lives,
+    MazeFlagList,
+    MazesScoreList,
+    FruitsGetNum,
+    CapsuleGetNum,
+    MedalGetNum,
+    BombDotKillNum,
+    DotKillNum,
+    RevRollKillNum,
+    ButtBounceKillNum,
+    GhostKillNum,
+    MagicKeyUnlocked,
+    TrueEnding,
+    MarathonUnlocked,
+    MarathonHighScore,
+    MarathonClear,
+    LastGISaveArea,
+    LoadInitScene,
+    DLCApplyFlag,
+    JukeBoxBGM,
 }
 
 #[derive(Debug)]
@@ -21,6 +44,7 @@ pub enum SaveDataIntType {
     U32,
     I32,
     Arrayi32(u32), // stores its length
+    Arrayu32(u32),
     Arrayu8(u32),
     ArrayText(u32),
 }

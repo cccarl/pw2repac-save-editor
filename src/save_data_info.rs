@@ -1,9 +1,17 @@
-#[derive(Debug)]
+use enum_iterator::Sequence;
+
+#[derive(Debug, PartialEq, Sequence)]
 pub enum SaveDataVar {
     FileExists,
+    SaveDate,
     PlayTimeHours,
     PlayTimeMinutes,
     PlayTimeSeconds,
+    StageFlagList,
+    ScoreList,
+    TimeTrialList,
+    TimeTrialCoopList,
+    FriendsFlagList,
     Lives,
 }
 
@@ -13,6 +21,8 @@ pub enum SaveDataIntType {
     U32,
     I32,
     Arrayi32(u32), // stores its length
+    Arrayu8(u32),
+    ArrayText(u32),
 }
 
 #[derive(Debug)]

@@ -23,40 +23,20 @@ pub fn read_save_file() -> Result<Vec<u8>, String> {
     }
 }
 
-
-pub fn get_save_file_variable(
-    req_data: SaveDataVar,
-    slot: u8,
-) -> SaveFileData {
-    let slot_base_add: u32 = get_save_slot_base_add(slot);
-
-    let offset: u32;
-    match req_data {
-        SaveDataVar::Lives => {
-            offset = 0x46C;
-
-            SaveFileData {
-                variable_name: "m_iStockNum".into(),
-                variable_name_simple: "Lives".into(),
-                offset,
-                slot_base_add,
-                var: SaveDataVar::Lives,
-                int_type: SaveDataIntType::I32,
-            }
-        },
-    }
-}
-
 pub fn get_int_value_from_save_data(save_file_raw: Vec<u8>, slot_base: u32, offset: u32, int_type: SaveDataIntType) -> i64 {
 
     match int_type {
+        SaveDataIntType::Bool => {
+            save_file_raw[slot_base as usize + offset as usize].into()
+        },
         SaveDataIntType::U32 => {
-            0
+            let save_data_slice: &[u8] = &save_file_raw[(slot_base as usize + offset as usize)..(slot_base as usize + offset as usize + 4)];
+            let value_raw = u32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
+            value_raw.into()
         },
         SaveDataIntType::I32 => {
             let save_data_slice: &[u8] = &save_file_raw[(slot_base as usize + offset as usize)..(slot_base as usize + offset as usize + 4)];
             let value_raw = i32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
-            //println!("i32 (little-endian): {}", value_raw);
             value_raw.into()
         },
         SaveDataIntType::Arrayi32(_) => {
@@ -64,4 +44,64 @@ pub fn get_int_value_from_save_data(save_file_raw: Vec<u8>, slot_base: u32, offs
         },
     }
 
+}
+
+pub fn get_save_file_variable(
+    req_data: SaveDataVar,
+    slot: u8,
+) -> SaveFileData {
+    let slot_base_add: u32 = get_save_slot_base_add(slot);
+
+    match req_data {
+        SaveDataVar::FileExists => {
+            SaveFileData {
+                variable_name: "m_bExist".into(),
+                variable_name_simple: "File Exists".into(),
+                offset: 0x0,
+                int_type: SaveDataIntType::Bool,
+                slot_base_add,
+                var: req_data,
+            }
+        },
+        SaveDataVar::PlayTimeHours => {
+            SaveFileData {
+                variable_name: "m_iPlayHours".into(),
+                variable_name_simple: "File Hours".into(),
+                offset: 0x28,
+                int_type: SaveDataIntType::I32,
+                slot_base_add,
+                var: req_data,
+            }
+        },
+        SaveDataVar::PlayTimeMinutes => {
+            SaveFileData {
+                variable_name: "m_iPlayMinutes".into(),
+                variable_name_simple: "File Minutes".into(),
+                offset: 0x2C,
+                int_type: SaveDataIntType::I32,
+                slot_base_add,
+                var: req_data,
+            }
+        },
+        SaveDataVar::PlayTimeSeconds => {
+            SaveFileData {
+                variable_name: "m_iPlaySeconds".into(),
+                variable_name_simple: "File Seconds".into(),
+                offset: 0x30,
+                int_type: SaveDataIntType::I32,
+                slot_base_add,
+                var: req_data,
+            }
+        },
+        SaveDataVar::Lives => {
+            SaveFileData {
+                variable_name: "m_iStockNum".into(),
+                variable_name_simple: "Lives".into(),
+                offset: 0x46C,
+                int_type: SaveDataIntType::I32,
+                slot_base_add,
+                var: req_data,
+            }
+        },
+    }
 }

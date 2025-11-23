@@ -31,9 +31,8 @@ fn main() -> Result<(), eframe::Error> {
     println!("Hello, world!");
     let save_file_data_read_res = read_save_file();
 
-    let save_data = match save_file_data_read_res {
+    match save_file_data_read_res {
         Ok(raw_bytes) => {
-
             let mut vec_guard = SAVE_DATA.lock().unwrap();
             vec_guard.clear();
             vec_guard.extend(raw_bytes.iter());
@@ -44,14 +43,6 @@ fn main() -> Result<(), eframe::Error> {
             None
         },
     };
-    
-
-    if let Some(save) = save_data {
-        let lives_data = get_save_file_variable(SaveDataVar::Lives, 1);
-        let lives = get_int_value_from_save_data(save, lives_data.slot_base_add, lives_data.offset, save_data_info::SaveDataIntType::I32);
-        println!("LIVES ARE: {:?}", lives);
-    }
-
     
     // GUI starts here
     let options = eframe::NativeOptions {
@@ -108,6 +99,7 @@ fn show_central_panel(ctx: &Context) {
         egui::Grid::new("FileSelectGrid")
             .min_col_width(available_space.x / 2.)
             .min_row_height(available_space.y / 2.)
+            .max_col_width(available_space.x / 2.)
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     ui.label("Save 1");
@@ -144,10 +136,46 @@ fn generate_main_menu_table(ui: &mut eframe::egui::Ui, save_slot: u8) {
         }
     };
 
-    let lives_data = get_save_file_variable(SaveDataVar::Lives, save_slot);
     let save_data_guard = SAVE_DATA.lock().unwrap();
+
+    let file_exists_data = get_save_file_variable(SaveDataVar::FileExists, save_slot);
+    let file_exists = get_int_value_from_save_data(save_data_guard.to_vec(), file_exists_data.slot_base_add, file_exists_data.offset, file_exists_data.int_type);
+
+    if file_exists == 0 {
+        if ui.button("Create Save File").clicked() {
+            println!("TODO!");
+        }
+        return;
+    }
+
+    let lives_data = get_save_file_variable(SaveDataVar::Lives, save_slot);
     let lives = get_int_value_from_save_data(save_data_guard.to_vec(), lives_data.slot_base_add.into(), lives_data.offset, lives_data.int_type);
-    
+
+    let hours_data = get_save_file_variable(SaveDataVar::PlayTimeHours, save_slot);
+    let minutes_data = get_save_file_variable(SaveDataVar::PlayTimeMinutes, save_slot);
+    let sec_data = get_save_file_variable(SaveDataVar::PlayTimeSeconds, save_slot);
+    let hours = get_int_value_from_save_data(save_data_guard.to_vec(), hours_data.slot_base_add, hours_data.offset, hours_data.int_type);
+    let minutes = get_int_value_from_save_data(save_data_guard.to_vec(), minutes_data.slot_base_add, minutes_data.offset, minutes_data.int_type);
+    let seconds  = get_int_value_from_save_data(save_data_guard.to_vec(), sec_data.slot_base_add, sec_data.offset, sec_data.int_type);
+
+    let hours_str = if hours <= 9 {
+        format!("00{}", hours)
+    } else if hours <= 99 {
+        format!("0{}", hours)
+    } else {
+        hours.to_string()
+    };
+    let min_str = if minutes <= 9 {
+        format!("0{}", minutes)
+    } else {
+        minutes.to_string()
+    };
+    let sec_str = if seconds <= 9 {
+        format!("0{}", seconds)
+    } else {
+        seconds.to_string()
+    };
+    let final_time = format!("{}:{}:{}", hours_str, min_str, sec_str);
 
     TableBuilder::new(ui)
         .id_salt(id)
@@ -178,6 +206,20 @@ fn generate_main_menu_table(ui: &mut eframe::egui::Ui, save_slot: u8) {
                     ui.label(format!("{}", lives));
                 });
             });
+            body.row(30.0, |mut row| {
+                row.col(|ui| {
+                    ui.label("Time");
+                });
+                row.col(|ui| {
+                    ui.label(format!("{}", final_time));
+                });
+            });
         });
+    if     ui.button("See details").clicked() {
+        println!("TODO!");
+    }
+    if     ui.button("Edit").clicked() {
+        println!("TODO!");
+    }
 
 }

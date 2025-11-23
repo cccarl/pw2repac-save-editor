@@ -1,10 +1,15 @@
 #[derive(Debug)]
 pub enum SaveDataVar {
+    FileExists,
+    PlayTimeHours,
+    PlayTimeMinutes,
+    PlayTimeSeconds,
     Lives,
 }
 
 #[derive(Debug)]
 pub enum SaveDataIntType {
+    Bool,
     U32,
     I32,
     Arrayi32(u32), // stores its length

@@ -1,5 +1,5 @@
-use std::{env, fs, str::from_utf8};
 use enum_iterator::all;
+use std::{env, fs, str::from_utf8};
 
 use crate::save_data_info::{SaveDataIntType, SaveDataVar, SaveFileData, get_save_slot_base_add};
 
@@ -47,10 +47,13 @@ pub fn get_int_value_from_save_data(
             let value_raw = i32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
             value_raw.into()
         }
-        SaveDataIntType::Arrayi32(_) | SaveDataIntType::Arrayu32(_) | SaveDataIntType::ArrayText(_) | SaveDataIntType::Arrayu8(_) => {
+        SaveDataIntType::Arrayi32(_)
+        | SaveDataIntType::Arrayu32(_)
+        | SaveDataIntType::ArrayText(_)
+        | SaveDataIntType::Arrayu8(_) => {
             println!("Wrong function for this... offset: {}", offset);
             0
-        },
+        }
     }
 }
 
@@ -66,11 +69,9 @@ pub fn get_text_value_from_save_data(
                 ..(slot_base as usize + offset as usize + *len as usize)];
             match from_utf8(save_data_slice) {
                 Ok(str) => str.to_string(),
-                Err(_) => {
-                    String::from("Error")
-                },
+                Err(_) => String::from("Error"),
             }
-        },
+        }
         _ => {
             println!("This isn't text!");
             String::from("Error")
@@ -572,11 +573,384 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             slot_base_add,
             var: req_data,
         },
-
-
+        SaveDataVar::VillageGFFlag => SaveFileData {
+            variable_name: "m_iVillageGFFlag".into(),
+            variable_name_simple: "Village GF Flag".into(),
+            offset: 0x1D14,
+            int_type: SaveDataIntType::U32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraMode => SaveFileData {
+            variable_name: "m_iCameraMode".into(),
+            variable_name_simple: "Camera Mode".into(),
+            offset: 0x1D18,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraSpeedY => SaveFileData {
+            variable_name: "m_iCameraSpeedUD".into(),
+            variable_name_simple: "Camera Speed Y".into(),
+            offset: 0x1D1C,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraSpeedX => SaveFileData {
+            variable_name: "m_iCameraSpeedLR".into(),
+            variable_name_simple: "Camera Speed X".into(),
+            offset: 0x1D20,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraControlY => SaveFileData {
+            variable_name: "m_iCameraControlUD".into(),
+            // TODO check if this really is camera assist
+            variable_name_simple: "Camera Assist Y".into(),
+            offset: 0x1D24,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraControlX => SaveFileData {
+            variable_name: "m_iCameraControlLR".into(),
+            variable_name_simple: "Camera Assist X".into(),
+            offset: 0x1D2C,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraAssistFlag => SaveFileData {
+            variable_name: "m_iCameraAssistFlag".into(),
+            variable_name_simple: "Camera Assist Flag".into(),
+            offset: 0x1D30,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::CameraYAutoRotateFlag => SaveFileData {
+            variable_name: "m_iCameraYAutoRotFlag".into(),
+            variable_name_simple: "Camera Autorotate Flag".into(),
+            offset: 0x1D34,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::SwimControlY => SaveFileData {
+            variable_name: "m_iSwimControlUD".into(),
+            variable_name_simple: "Swim Control Y".into(),
+            offset: 0x1D38,
+            // the decompilation says it's an array but since it's 1 element we can just treat it as i32
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        // TODO mission progress here
+        SaveDataVar::MissionRewardFlag => SaveFileData {
+            variable_name: "m_iMissionRewardFlag".into(),
+            variable_name_simple: "Mission Reward Flags".into(),
+            offset: 0x21EC,
+            int_type: SaveDataIntType::Arrayi32(LEVELS_COUNT + 1),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PlayerSkinId => SaveFileData {
+            variable_name: "m_iPlayerSkinId".into(),
+            variable_name_simple: "Player Skin".into(),
+            offset: 0x23E0,
+            // game says it's an array of 2 but it's easier here to make this 2 separate vars
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PlayerSkinId2 => SaveFileData {
+            variable_name: "m_iPlayerSkinId".into(),
+            variable_name_simple: "Player Skin P2".into(),
+            offset: 0x23E4,
+            // game says it's an array of 2 but it's easier here to make this 2 separate vars
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::FigureInfo => SaveFileData {
+            variable_name: "m_sFigureInfo".into(),
+            variable_name_simple: "Figure Info".into(),
+            offset: 0x23E8,
+            int_type: SaveDataIntType::Arrayi32(20), // TODO find length by filling the village
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::FigureDisplayInfo => SaveFileData {
+            variable_name: "m_sFigureDisplayInfo".into(),
+            variable_name_simple: "Figure Display Info".into(),
+            offset: 0x2BE8,
+            int_type: SaveDataIntType::Arrayi32(100),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::GashaFlag => SaveFileData {
+            variable_name: "m_iGashaFlag".into(),
+            variable_name_simple: "Gasha Flag List".into(),
+            offset: 0x2BE8,
+            int_type: SaveDataIntType::Arrayi32(100),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::GashaLotteryNum => SaveFileData {
+            variable_name: "m_iGashaLotteryNum".into(),
+            variable_name_simple: "Gasha Lottery Number".into(),
+            offset: 0x2DA8,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::FlipKillNum => SaveFileData {
+            variable_name: "m_iFlipKillNum".into(),
+            variable_name_simple: "Flip Kill Number".into(),
+            offset: 0x2DAC,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::SupperHipStunNum => SaveFileData {
+            variable_name: "m_iSuperHipStunNum".into(),
+            variable_name_simple: "Super Butt Bounce Stun Number".into(),
+            offset: 0x2DB0,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::SuperDolphinKillNum => SaveFileData {
+            variable_name: "m_iSuperDolphinKillNum".into(),
+            variable_name_simple: "Super Dolphin Kick Kill Number".into(),
+            offset: 0x2DB4,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::UnlockStageSelectFlag => SaveFileData {
+            variable_name: "m_uUnlockStageSelectFlag".into(),
+            variable_name_simple: "Unlock Stage Select Flag".into(),
+            offset: 0x2DB8,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::GameLevel => SaveFileData {
+            variable_name: "m_iGameLevel".into(),
+            variable_name_simple: "Game Level".into(),
+            offset: 0x2DBC,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::EnterPast => SaveFileData {
+            variable_name: "m_bEnterPast".into(),
+            variable_name_simple: "Enter Past".into(),
+            offset: 0x2DC0,
+            int_type: SaveDataIntType::Bool,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::OriginalFlag => SaveFileData {
+            variable_name: "m_iOriginalFlag".into(),
+            variable_name_simple: "Pac-Man Flags".into(),
+            offset: 0x2DC0,
+            int_type: SaveDataIntType::Arrayi32(3),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::OriginalStageNum => SaveFileData {
+            variable_name: "m_iOriginalStageNum".into(),
+            variable_name_simple: "Pac-Man Best Stage".into(),
+            offset: 0x2DD0,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::OriginalHighScore => SaveFileData {
+            variable_name: "m_iOriginalHighScore".into(),
+            variable_name_simple: "Pac-Man High Score".into(),
+            offset: 0x2DD4,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PacManiaStageNum => SaveFileData {
+            variable_name: "m_iPacManiaStageNum".into(),
+            variable_name_simple: "Pac-Mania Stage Number".into(),
+            offset: 0x2DD8,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PacmaniaHighScore => SaveFileData {
+            variable_name: "m_iPacManiaHighScore".into(),
+            variable_name_simple: "Pac-Mania High Score".into(),
+            offset: 0x2DDC,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PacAttackLevelNum => SaveFileData {
+            variable_name: "m_iPacAttackLevelNum".into(),
+            variable_name_simple: "Pac-Attack Level Number".into(),
+            offset: 0x2DE0,
+            int_type: SaveDataIntType::Arrayi32(4),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PacAttackHighScore => SaveFileData {
+            variable_name: "m_iPacAttackHighScore".into(),
+            variable_name_simple: "Pac-Attack High Score".into(),
+            offset: 0x2DF0,
+            int_type: SaveDataIntType::Arrayi32(4),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::HelpFlag => SaveFileData {
+            variable_name: "m_iHelpFlag".into(),
+            variable_name_simple: "Help Flags".into(),
+            offset: 0x2E00,
+            int_type: SaveDataIntType::Arrayi32(4), // TODO find length
+            slot_base_add,
+            var: req_data,
+        },
+        // TODO drone skin flag
+        // TODO dron sking ID
+        SaveDataVar::DroneReticleSpeed => SaveFileData {
+            variable_name: "m_iDroneReticleSpeed".into(),
+            variable_name_simple: "Drone Reticle Speed".into(),
+            offset: 0x2EF4,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::DroneReticleColor => SaveFileData {
+            variable_name: "m_iDroneReticleColor".into(),
+            variable_name_simple: "Drone Reticle Color".into(),
+            offset: 0x2EF8,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::DroneVacuumRangeFlag => SaveFileData {
+            variable_name: "m_iDroneVacuumRangeFlag".into(),
+            variable_name_simple: "Drone Vacuum Range Flag".into(),
+            offset: 0x2EFC,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::EarlyBonusFigureFlag => SaveFileData {
+            variable_name: "m_iEarlyBonusFigureFlag".into(),
+            variable_name_simple: "Early Access Bonus Figure".into(),
+            offset: 0x2F00,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::KeyConfigP1 => SaveFileData {
+            variable_name: "m_keyconfigSave1P".into(),
+            variable_name_simple: "Key Config Player 1".into(),
+            offset: 0x2F04,
+            int_type: SaveDataIntType::Arrayi32(672),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::KeyConfigP2 => SaveFileData {
+            variable_name: "m_keyconfigSave2P".into(),
+            variable_name_simple: "Key Config Player 2".into(),
+            offset: 0x3984,
+            int_type: SaveDataIntType::Arrayi32(672),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::GashaDLCFlag => SaveFileData {
+            variable_name: "m_iGashaDLCFlag".into(),
+            variable_name_simple: "Gasha DLC Flag".into(),
+            offset: 0x4404,
+            int_type: SaveDataIntType::Arrayi32(4),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::FigureInfoDLC => SaveFileData {
+            variable_name: "m_sFigureInfoDLC".into(),
+            variable_name_simple: "Figure Info DLC".into(),
+            offset: 0x4414,
+            int_type: SaveDataIntType::Arrayi32(10), // TODO find this length
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::EnterSonic => SaveFileData {
+            variable_name: "m_bEnterSonic".into(),
+            variable_name_simple: "Enter Sonic".into(),
+            offset: 0x4454,
+            int_type: SaveDataIntType::Bool,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::VillageSonicFlag => SaveFileData {
+            variable_name: "m_uVillageSonicFlag".into(),
+            variable_name_simple: "Village Sonic Flag".into(),
+            offset: 0x4458,
+            int_type: SaveDataIntType::U32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::LoadInitSceneCollab => SaveFileData {
+            variable_name: "m_iLoadInitSceneCollabo".into(),
+            variable_name_simple: "Load Init Scene (Sonic)".into(),
+            offset: 0x445C,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::LoadInitSceneKind => SaveFileData {
+            variable_name: "m_iLoadInitSceneKind".into(),
+            variable_name_simple: "Load Init Scene Kind".into(),
+            offset: 0x4560,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::LastStageIdCollab => SaveFileData {
+            variable_name: "m_iLastStageIdCollabo".into(),
+            variable_name_simple: "Last Stage ID (Sonic)".into(),
+            offset: 0x4564,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::LastStageIdKindCollab => SaveFileData {
+            variable_name: "m_iLastStageIdKind".into(),
+            variable_name_simple: "Last Stage ID Kind (Sonic)".into(),
+            offset: 0x4568,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::PlayerSkinIdCollab => SaveFileData {
+            variable_name: "m_iPlayerSkinIdCollabo".into(),
+            variable_name_simple: "Player Skin (Sonic)".into(),
+            offset: 0x456C,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::FigureDisplayInfoCollab => SaveFileData {
+            variable_name: "m_iFigureDisplayInfoCollabo".into(),
+            variable_name_simple: "Figure Display Info (Sonic)".into(),
+            offset: 0x4570,
+            int_type: SaveDataIntType::Arrayi32(114),
+            slot_base_add,
+            var: req_data,
+        },
         SaveDataVar::JukeBoxBGMCollab => SaveFileData {
             variable_name: "m_iJukeBoxBGMKindCollabo".into(),
-            variable_name_simple: "Jukebox Music Sonic".into(),
+            variable_name_simple: "Jukebox Music (Sonic)".into(),
             offset: 0x4638,
             int_type: SaveDataIntType::I32,
             slot_base_add,
@@ -584,7 +958,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::JukeBoxModeCollab => SaveFileData {
             variable_name: "m_iJukeBoxModeCollabo".into(),
-            variable_name_simple: "Jukebox Mode Sonic".into(),
+            variable_name_simple: "Jukebox Mode (Sonic)".into(),
             offset: 0x463C,
             int_type: SaveDataIntType::I32,
             slot_base_add,

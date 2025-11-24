@@ -7,7 +7,7 @@ use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
-use crate::{save_data_info::bgm_music_str_to_name, save_file_parser::{
+use crate::{save_data_info::{bgm_music_str_to_name, costume_int_to_name}, save_file_parser::{
     get_all_save_file_vars, get_int_value_from_save_data, get_text_value_from_save_data,
 }};
 
@@ -386,8 +386,11 @@ impl App {
                             } else {
                                 match var_data.var {
                                     SaveDataVar::JukeBoxBGM | SaveDataVar::JukeBoxBGMCollab => {
-                                        ui.label(bgm_music_str_to_name(&value_str));
-                                    }
+                                        ui.label(bgm_music_str_to_name(value_str.parse().unwrap_or(-100)));
+                                    },
+                                    SaveDataVar::PlayerSkinId | SaveDataVar::PlayerSkinId2 | SaveDataVar::PlayerSkinIdCollab => {
+                                        ui.label(costume_int_to_name(value_str.parse().unwrap_or(-100)));
+                                    },
                                     _ => {
                                         ui.label(value_str);
                                     }

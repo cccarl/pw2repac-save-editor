@@ -7,9 +7,9 @@ use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
-use crate::save_file_parser::{
+use crate::{save_data_info::bgm_music_str_to_name, save_file_parser::{
     get_all_save_file_vars, get_int_value_from_save_data, get_text_value_from_save_data,
-};
+}};
 
 //const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
 static SAVE_DATA: LazyLock<Mutex<Vec<u8>>> = LazyLock::new(|| {
@@ -56,6 +56,20 @@ impl eframe::App for App {
 
 fn main() -> Result<(), eframe::Error> {
     println!("Hello, world!");
+    reload_save_file();
+
+    // GUI starts here
+    let options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_resizable(true)
+            .with_inner_size([900., 600.]),
+        ..Default::default()
+    };
+
+    eframe::run_native("Waka", options, Box::new(|_ctx| Ok(Box::<App>::default())))
+}
+
+fn reload_save_file() {
     let save_file_data_read_res = read_save_file();
 
     match save_file_data_read_res {
@@ -70,16 +84,6 @@ fn main() -> Result<(), eframe::Error> {
             None
         }
     };
-
-    // GUI starts here
-    let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_resizable(true)
-            .with_inner_size([900., 600.]),
-        ..Default::default()
-    };
-
-    eframe::run_native("Waka", options, Box::new(|_ctx| Ok(Box::<App>::default())))
 }
 
 fn set_styles(ctx: &Context) {
@@ -284,6 +288,9 @@ impl App {
             if ui.button("Go Back").clicked() {
                 self.current_view = CurrentMenu::Main;
             };
+            if ui.button("Reload Save Data").clicked() {
+                reload_save_file();
+            };
 
             let table = TableBuilder::new(ui)
                 .striped(true)
@@ -377,7 +384,14 @@ impl App {
                                     println!("TODO");
                                 }
                             } else {
-                                ui.label(value_str);
+                                match var_data.var {
+                                    SaveDataVar::JukeBoxBGM | SaveDataVar::JukeBoxBGMCollab => {
+                                        ui.label(bgm_music_str_to_name(&value_str));
+                                    }
+                                    _ => {
+                                        ui.label(value_str);
+                                    }
+                                };
                             }
                         });
                     });
@@ -386,3 +400,6 @@ impl App {
         });
     }
 }
+
+
+

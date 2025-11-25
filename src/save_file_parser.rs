@@ -57,6 +57,53 @@ pub fn get_int_value_from_save_data(
     }
 }
 
+pub fn get_array_from_save_data(
+    save_file_raw: Vec<u8>,
+    slot_base: u32,
+    offset: u32,
+    int_type: &SaveDataIntType,
+) -> Vec<i64> {
+    match int_type {
+        SaveDataIntType::Arrayi32(len) => {
+            let mut final_vec: Vec<i64> = vec![];
+            for i in 0..(*len as usize) {
+                let save_data_slice: &[u8] =
+                    &save_file_raw[(slot_base as usize + offset as usize + (i * 4))
+                        ..(slot_base as usize + offset as usize + 4 + (i * 4))];
+                let value_raw = i32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
+                final_vec.push(value_raw as i64);
+            }
+            final_vec
+        }
+        SaveDataIntType::Arrayu32(len) => {
+            let mut final_vec: Vec<i64> = vec![];
+            for i in 0..(*len as usize) {
+                let save_data_slice: &[u8] =
+                    &save_file_raw[(slot_base as usize + offset as usize + (i * 4))
+                        ..(slot_base as usize + offset as usize + 4 + (i * 4))];
+                let value_raw = u32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
+                final_vec.push(value_raw as i64);
+            }
+            final_vec
+        },
+        SaveDataIntType::Arrayu8(len) => {
+            
+            let mut final_vec: Vec<i64> = vec![];
+            for i in 0..(*len as usize) {
+                let byte_found: u8 = save_file_raw[slot_base as usize + offset as usize + i];
+                final_vec.push(byte_found as i64);
+            }
+            final_vec
+            
+        },
+        SaveDataIntType::ArrayText(_) => todo!(),
+        SaveDataIntType::Bool | SaveDataIntType::U32 | SaveDataIntType::I32 => {
+            println!("This isn't an array!");
+            vec![]
+        }
+    }
+}
+
 pub fn get_text_value_from_save_data(
     save_file_raw: Vec<u8>,
     slot_base: u32,
@@ -152,7 +199,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iStageTimeList".into(),
             variable_name_simple: "Time Trials List".into(),
             offset: 0x1AC,
-            int_type: SaveDataIntType::Arrayi32(60), // TODO if this really is 60 and not 40 hmmm
+            int_type: SaveDataIntType::Arrayi32(LEVELS_COUNT),
             slot_base_add,
             var: req_data,
         },
@@ -160,7 +207,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iStageTimeListCoop".into(),
             variable_name_simple: "Time Trials Coop List".into(),
             offset: 0x210, // TODO check if this is true lollll
-            int_type: SaveDataIntType::Arrayi32(60),
+            int_type: SaveDataIntType::Arrayi32(LEVELS_COUNT),
             slot_base_add,
             var: req_data,
         },
@@ -184,7 +231,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_bStageMazeFlagList".into(),
             variable_name_simple: "Stage Maze Flag".into(),
             offset: 0x450,
-            int_type: SaveDataIntType::Arrayu32(MAZES_COUNT),
+            int_type: SaveDataIntType::Arrayu8(MAZES_COUNT),
             slot_base_add,
             var: req_data,
         },

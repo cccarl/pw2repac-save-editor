@@ -7,9 +7,13 @@ use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
-use crate::{save_data_info::{bgm_music_str_to_name, costume_int_to_name}, save_file_parser::{
-    get_all_save_file_vars, get_int_value_from_save_data, get_text_value_from_save_data,
-}};
+use crate::{
+    save_data_info::{SaveFileData, bgm_music_str_to_name, costume_int_to_name, int_to_stage_name},
+    save_file_parser::{
+        get_all_save_file_vars, get_array_from_save_data, get_int_value_from_save_data,
+        get_text_value_from_save_data,
+    },
+};
 
 //const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
 static SAVE_DATA: LazyLock<Mutex<Vec<u8>>> = LazyLock::new(|| {
@@ -29,13 +33,13 @@ enum CurrentMenu {
 enum SaveFileCurrentView {
     #[default]
     AllVars,
-    StageFlag,
-    Scores,
+    GenericArray(SaveFileData),
 }
 
 #[derive(Default)]
 struct App {
     current_view: CurrentMenu,
+    single_save_file_view: SaveFileCurrentView,
     save_slot_chosen: u8,
 }
 
@@ -48,7 +52,12 @@ impl eframe::App for App {
                 self.show_main_menu(ctx);
             }
             CurrentMenu::FileDetails => {
-                self.show_details_save_file(ctx);
+                match &self.single_save_file_view {
+                    SaveFileCurrentView::AllVars => self.show_details_save_file(ctx),
+                    SaveFileCurrentView::GenericArray(var_data) => {
+                        self.show_single_array_table(ctx, var_data.clone());
+                    }
+                };
             }
         };
     }
@@ -373,24 +382,31 @@ impl App {
 
                     body.row(30.0, |mut row| {
                         row.col(|ui| {
-                            ui.label(var_data.variable_name_simple);
+                            ui.label(var_data.variable_name_simple.clone());
                         });
                         row.col(|ui| {
-                            ui.label(var_data.variable_name);
+                            ui.label(var_data.variable_name.clone());
                         });
                         row.col(|ui| {
                             if value_str == "list" {
                                 if ui.button("Open").clicked() {
-                                    println!("TODO");
+                                    self.single_save_file_view =
+                                        SaveFileCurrentView::GenericArray(var_data);
                                 }
                             } else {
                                 match var_data.var {
                                     SaveDataVar::JukeBoxBGM | SaveDataVar::JukeBoxBGMCollab => {
-                                        ui.label(bgm_music_str_to_name(value_str.parse().unwrap_or(-100)));
-                                    },
-                                    SaveDataVar::PlayerSkinId | SaveDataVar::PlayerSkinId2 | SaveDataVar::PlayerSkinIdCollab => {
-                                        ui.label(costume_int_to_name(value_str.parse().unwrap_or(-100)));
-                                    },
+                                        ui.label(bgm_music_str_to_name(
+                                            value_str.parse().unwrap_or(-100),
+                                        ));
+                                    }
+                                    SaveDataVar::PlayerSkinId
+                                    | SaveDataVar::PlayerSkinId2
+                                    | SaveDataVar::PlayerSkinIdCollab => {
+                                        ui.label(costume_int_to_name(
+                                            value_str.parse().unwrap_or(-100),
+                                        ));
+                                    }
                                     _ => {
                                         ui.label(value_str);
                                     }
@@ -402,7 +418,129 @@ impl App {
             });
         });
     }
+
+    fn show_single_array_table(&mut self, ctx: &Context, var_data: SaveFileData) {
+        CentralPanel::default().show(ctx, |ui| {
+            let available_space = ui.available_size();
+            ui.set_min_size(available_space);
+
+            if ui.button("Go Back To All Data").clicked() {
+                self.single_save_file_view = SaveFileCurrentView::AllVars;
+            };
+            if ui.button("Reload Save Data").clicked() {
+                reload_save_file();
+            };
+
+            let table = TableBuilder::new(ui)
+                .striped(true)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                .column(Column::auto())
+                .column(Column::auto())
+                .column(
+                    Column::remainder()
+                        .at_least(40.0)
+                        .clip(true)
+                        .resizable(true),
+                )
+                .header(20.0, |mut header| {
+                    match var_data.var {
+                        SaveDataVar::ScoreList | SaveDataVar::TimeTrialList => {
+                            header.col(|ui| {
+                                ui.strong("Level");
+                                ui.set_width(50.);
+                            });
+                        }
+                        _ => {
+                            header.col(|ui| {
+                                ui.strong("Position");
+                                ui.set_width(50.);
+                            });
+                        }
+                    }
+
+                    header.col(|ui| {
+                        ui.strong("Address");
+                        ui.set_width(50.);
+                    });
+                    header.col(|ui| {
+                        ui.strong("Value");
+                    });
+                });
+
+            let save_data_guard = SAVE_DATA.lock().unwrap();
+            let vec_for_table = get_array_from_save_data(
+                save_data_guard.to_vec(),
+                var_data.slot_base_add,
+                var_data.offset,
+                &var_data.int_type,
+            );
+            table.body(|mut body| {
+                for (i, var) in vec_for_table.iter().enumerate() {
+                    body.row(30.0, |mut row| {
+                        match var_data.var {
+                            SaveDataVar::ScoreList | SaveDataVar::TimeTrialList | SaveDataVar::StageFlagList => {
+                                let level_name = int_to_stage_name(i, false);
+                                row.col(|ui| {
+                                    ui.label(level_name);
+                                });
+                            },
+                            SaveDataVar::MissionRewardFlag => {
+                                let level_name = int_to_stage_name(i, true);
+                                row.col(|ui| {
+                                    ui.label(level_name);
+                                });
+                            },
+                            _ => {
+                                row.col(|ui| {
+                                    ui.label(i.to_string());
+                                });
+                            }
+                        }
+
+                        row.col(|ui| {
+                            let bytes_amount: u32 = match var_data.int_type {
+                                save_data_info::SaveDataIntType::Arrayi32(_) => 4,
+                                save_data_info::SaveDataIntType::Arrayu32(_) => 4,
+                                save_data_info::SaveDataIntType::Arrayu8(_) => 1,
+                                _ => 0, // should never happen
+                            };
+                            ui.label(format!(
+                                "{:X}",
+                                (var_data.slot_base_add
+                                    + var_data.offset
+                                    + (i as u32 * bytes_amount))
+                            ));
+                        });
+                        row.col(|ui| match var_data.var {
+                            SaveDataVar::TimeTrialList | SaveDataVar::TimeTrialCoopList => {
+                                let seconds_total = var / 100;
+                                let ms = var - seconds_total * 100;
+                                let minutes = seconds_total / 60;
+                                let seconds = seconds_total % 60;
+
+                                let ms_str: String;
+                                if ms < 10 {
+                                    ms_str = format!("0{}", ms);
+                                } else {
+                                    ms_str = ms.to_string();
+                                }
+
+                                let seconds_str: String;
+                                if seconds < 10 {
+                                    seconds_str = format!("0{}", seconds);
+                                } else {
+                                    seconds_str = seconds.to_string();
+                                }
+
+                                ui.label(format!("{}:{}.{}", minutes, seconds_str, ms_str));
+                            }
+                            _ => {
+                                ui.label(var.to_string());
+                            }
+                        });
+                    })
+                }
+            });
+        });
+    }
 }
-
-
-

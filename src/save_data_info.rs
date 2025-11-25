@@ -1,6 +1,6 @@
 use enum_iterator::Sequence;
 
-#[derive(Debug, PartialEq, Sequence)]
+#[derive(Debug, PartialEq, Sequence, Clone)]
 pub enum SaveDataVar {
     FileExists,
     //m_bNameList, whatever this is
@@ -122,7 +122,7 @@ pub enum SaveDataVar {
     JukeBoxModeCollab,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SaveDataIntType {
     Bool,
     U32,
@@ -133,7 +133,7 @@ pub enum SaveDataIntType {
     ArrayText(u32),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SaveFileData {
     pub var: SaveDataVar,
     pub variable_name: String,
@@ -280,6 +280,61 @@ pub fn costume_int_to_name(costume_id: i32) -> String {
         0x1f => "1F Spooky",
         0x20 => "20 Sonic",
         _ => return format!("Unknown: {}", costume_id),
+    }
+    .to_string()
+}
+
+pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
+    
+    let id_to_match = if pac_village_start {
+        id
+    } else {
+        id + 1
+    };
+
+    match id_to_match {
+        0 => "Pac-Village",
+        1 => "The Bear Basics",
+        2 => "Canyon Chaos",
+        3 => "Pac-Dot Pond",
+        4 => "Clyde's Frog",
+        5 => "B-Doing Woods",
+        6 => "Treewood Forest",
+        7 => "Butane Pain",
+        8 => "Inky's Whimsy",
+        9 => "Ice River Run",
+        10 => "Avalanche Alley",
+        11 => "Blade Mountain",
+        12 => "Pinky's Revenge",
+        13 => "Into The Volcano!",
+        14 => "Volcanic Panic",
+        15 => "Magma Opus",
+        16 => "Blinky in the Caldera",
+        17 => "Scuba Duba",
+        18 => "Shark Attack",
+        19 => "Yellow Pac-Marine",
+        20 => "Whale on a Sub",
+        21 => "Haunted Boardwalk",
+        22 => "Night Crawling",
+        23 => "Ghost Bayou",
+        24 => "Spooky",
+        25 => "Deadly Poisonous Meadows",
+        26 => "A Long Poisonous Tongue",
+        27 => "Harsh Harsh Winds",
+        28 => "Hunter Of Darkness",
+        29 => "Pro Thunder Skater",
+        30 => "Boom! Boom! Clap!",
+        31 => "Hot! Fire Trouble",
+        32 => "Burning Hot Beats",
+        33 => "Sharks Everywhere",
+        34 => "Pac-Marine Battle!",
+        35 => "Clumsy Bayou",
+        36 => "Legendary Story",
+        37 => "Flying Dark Shadow",
+        38 => "Rolling Around On the Island",
+        39 => "Supersonic Tricky Railroad",
+        40 => "300 IQ Evil Genius",
+        _ => "Unknown",
     }
     .to_string()
 }

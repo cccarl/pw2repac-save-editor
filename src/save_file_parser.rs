@@ -6,6 +6,11 @@ use crate::save_data_info::{SaveDataIntType, SaveDataVar, SaveFileData, get_save
 const LEVELS_COUNT: u32 = 40;
 const MAZES_COUNT: u32 = 15;
 
+pub struct SFigureDisplayInfo {
+    pub figure_id: i32,
+    pub angle: f32,
+}
+
 pub fn read_save_file() -> Result<Vec<u8>, String> {
     let pac_save_path_res = env::var("LOCALAPPDATA");
 
@@ -50,14 +55,15 @@ pub fn get_int_value_from_save_data(
         SaveDataIntType::Arrayi32(_)
         | SaveDataIntType::Arrayu32(_)
         | SaveDataIntType::ArrayText(_)
-        | SaveDataIntType::Arrayu8(_) => {
+        | SaveDataIntType::Arrayu8(_)
+        | SaveDataIntType::SFigureDisplayInfoArray(_) => {
             println!("Wrong function for this... offset: {}", offset);
             0
         }
     }
 }
 
-pub fn get_array_from_save_data(
+pub fn get_int_array_from_save_data(
     save_file_raw: Vec<u8>,
     slot_base: u32,
     offset: u32,
@@ -85,23 +91,46 @@ pub fn get_array_from_save_data(
                 final_vec.push(value_raw as i64);
             }
             final_vec
-        },
+        }
         SaveDataIntType::Arrayu8(len) => {
-            
             let mut final_vec: Vec<i64> = vec![];
             for i in 0..(*len as usize) {
                 let byte_found: u8 = save_file_raw[slot_base as usize + offset as usize + i];
                 final_vec.push(byte_found as i64);
             }
             final_vec
-            
-        },
+        }
         SaveDataIntType::ArrayText(_) => todo!(),
-        SaveDataIntType::Bool | SaveDataIntType::U32 | SaveDataIntType::I32 => {
+        SaveDataIntType::Bool
+        | SaveDataIntType::U32
+        | SaveDataIntType::I32
+        | SaveDataIntType::SFigureDisplayInfoArray(_) => {
             println!("This isn't an array!");
             vec![]
         }
     }
+}
+
+pub fn get_figure_info_from_save_data(
+    save_file_raw: Vec<u8>,
+    slot_base: u32,
+    offset: u32,
+    len: u32,
+) -> Vec<SFigureDisplayInfo> {
+    let mut final_vec: Vec<SFigureDisplayInfo> = vec![];
+    for i in 0..(len as usize) {
+        let save_data_slice_id: &[u8] =
+            &save_file_raw[(slot_base as usize + offset as usize + (i * 8))
+                ..(slot_base as usize + offset as usize + 4 + (i * 8))];
+        let figure_id = i32::from_le_bytes(save_data_slice_id.try_into().unwrap_or_default());
+        let save_data_slice_angle: &[u8] =
+            &save_file_raw[(slot_base as usize + offset as usize + 4 + (i * 8))
+                ..(slot_base as usize + offset as usize + 8 + (i * 8))];
+        let angle = f32::from_le_bytes(save_data_slice_angle.try_into().unwrap_or_default());
+
+        final_vec.push(SFigureDisplayInfo { figure_id, angle });
+    }
+    final_vec
 }
 
 pub fn get_text_value_from_save_data(
@@ -733,14 +762,14 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_sFigureDisplayInfo".into(),
             variable_name_simple: "Figure Display Info".into(),
             offset: 0x2BE8,
-            int_type: SaveDataIntType::Arrayi32(100),
+            int_type: SaveDataIntType::SFigureDisplayInfoArray(50),
             slot_base_add,
             var: req_data,
         },
         SaveDataVar::GashaFlag => SaveFileData {
             variable_name: "m_iGashaFlag".into(),
             variable_name_simple: "Gasha Flag List".into(),
-            offset: 0x2BE8,
+            offset: 0x2D78,
             int_type: SaveDataIntType::Arrayi32(100),
             slot_base_add,
             var: req_data,

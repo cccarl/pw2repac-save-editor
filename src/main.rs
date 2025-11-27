@@ -8,10 +8,13 @@ use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
 use crate::{
-    save_data_info::{SaveFileData, bgm_music_str_to_name, costume_int_to_name, int_to_stage_name},
+    save_data_info::{
+        SaveDataIntType, SaveFileData, bgm_music_str_to_name, costume_int_to_name,
+        int_to_stage_name,
+    },
     save_file_parser::{
-        get_all_save_file_vars, get_array_from_save_data, get_int_value_from_save_data,
-        get_text_value_from_save_data,
+        get_all_save_file_vars, get_figure_info_from_save_data, get_int_array_from_save_data,
+        get_int_value_from_save_data, get_text_value_from_save_data,
     },
 };
 
@@ -40,7 +43,10 @@ enum SaveFileCurrentView {
 struct App {
     current_view: CurrentMenu,
     single_save_file_view: SaveFileCurrentView,
+    show_save_code_variables: bool,
+    show_addresses: bool,
     save_slot_chosen: u8,
+    scroll_to_top: bool,
 }
 
 impl eframe::App for App {
@@ -75,7 +81,16 @@ fn main() -> Result<(), eframe::Error> {
         ..Default::default()
     };
 
-    eframe::run_native("Waka", options, Box::new(|_ctx| Ok(Box::<App>::default())))
+    eframe::run_native(
+        "Waka",
+        options,
+        Box::new(|_ctx| {
+            Ok(Box::<App>::new(App {
+                show_addresses: true,
+                ..Default::default()
+            }))
+        }),
+    )
 }
 
 fn reload_save_file() {
@@ -294,18 +309,30 @@ impl App {
             let available_space = ui.available_size();
             ui.set_min_size(available_space);
 
-            if ui.button("Go Back").clicked() {
-                self.current_view = CurrentMenu::Main;
-            };
-            if ui.button("Reload Save Data").clicked() {
-                reload_save_file();
-            };
+            ui.horizontal(|ui| {
+                if ui.button("Go Back").clicked() {
+                    self.current_view = CurrentMenu::Main;
+                };
+                if ui.button("Reload Save Data").clicked() {
+                    reload_save_file();
+                };
+                ui.checkbox(&mut self.show_addresses, "Show Addresses");
+                ui.checkbox(&mut self.show_save_code_variables, "Show Names in Code");
+            });
+
+            let mut extra_columns = 1;
+            if self.show_addresses {
+                extra_columns += 1;
+            }
+            if self.show_save_code_variables {
+                extra_columns += 1;
+            }
 
             let table = TableBuilder::new(ui)
+                .id_salt("table_details")
                 .striped(true)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .column(Column::auto())
-                .column(Column::auto())
+                .columns(Column::auto(), extra_columns)
                 .column(
                     Column::remainder()
                         .at_least(40.0)
@@ -317,10 +344,18 @@ impl App {
                         ui.strong("Name");
                         ui.set_width(50.);
                     });
-                    header.col(|ui| {
-                        ui.strong("Name in Code");
-                        ui.set_width(50.);
-                    });
+                    if self.show_save_code_variables {
+                        header.col(|ui| {
+                            ui.strong("Name in Code");
+                            ui.set_width(50.);
+                        });
+                    }
+                    if self.show_addresses {
+                        header.col(|ui| {
+                            ui.strong("Address");
+                            ui.set_width(50.);
+                        });
+                    }
                     header.col(|ui| {
                         ui.strong("Value");
                     });
@@ -369,7 +404,10 @@ impl App {
                         }
                         save_data_info::SaveDataIntType::Arrayi32(_)
                         | save_data_info::SaveDataIntType::Arrayu8(_)
-                        | save_data_info::SaveDataIntType::Arrayu32(_) => "list".to_string(),
+                        | save_data_info::SaveDataIntType::Arrayu32(_)
+                        | save_data_info::SaveDataIntType::SFigureDisplayInfoArray(_) => {
+                            "list".to_string()
+                        }
                         save_data_info::SaveDataIntType::ArrayText(_) => {
                             get_text_value_from_save_data(
                                 save_data_guard.to_vec(),
@@ -384,12 +422,21 @@ impl App {
                         row.col(|ui| {
                             ui.label(var_data.variable_name_simple.clone());
                         });
-                        row.col(|ui| {
-                            ui.label(var_data.variable_name.clone());
-                        });
+
+                        if self.show_save_code_variables {
+                            row.col(|ui| {
+                                ui.label(var_data.variable_name.clone());
+                            });
+                        }
+                        if self.show_addresses {
+                            row.col(|ui| {
+                                ui.label(format!("{:X}", var_data.slot_base_add + var_data.offset));
+                            });
+                        }
                         row.col(|ui| {
                             if value_str == "list" {
                                 if ui.button("Open").clicked() {
+                                    self.scroll_to_top = true;
                                     self.single_save_file_view =
                                         SaveFileCurrentView::GenericArray(var_data);
                                 }
@@ -424,14 +471,17 @@ impl App {
             let available_space = ui.available_size();
             ui.set_min_size(available_space);
 
-            if ui.button("Go Back To All Data").clicked() {
-                self.single_save_file_view = SaveFileCurrentView::AllVars;
-            };
-            if ui.button("Reload Save Data").clicked() {
-                reload_save_file();
-            };
+            ui.horizontal(|ui| {
+                if ui.button("Go Back To All Data").clicked() {
+                    self.single_save_file_view = SaveFileCurrentView::AllVars;
+                };
+                if ui.button("Reload Save Data").clicked() {
+                    reload_save_file();
+                };
+            });
 
             let table = TableBuilder::new(ui)
+                .id_salt(var_data.variable_name)
                 .striped(true)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                 .column(Column::auto())
@@ -444,7 +494,9 @@ impl App {
                 )
                 .header(20.0, |mut header| {
                     match var_data.var {
-                        SaveDataVar::ScoreList | SaveDataVar::TimeTrialList => {
+                        SaveDataVar::StageFlagList
+                        | SaveDataVar::ScoreList
+                        | SaveDataVar::TimeTrialList => {
                             header.col(|ui| {
                                 ui.strong("Level");
                                 ui.set_width(50.);
@@ -468,79 +520,147 @@ impl App {
                 });
 
             let save_data_guard = SAVE_DATA.lock().unwrap();
-            let vec_for_table = get_array_from_save_data(
-                save_data_guard.to_vec(),
-                var_data.slot_base_add,
-                var_data.offset,
-                &var_data.int_type,
-            );
-            table.body(|mut body| {
-                for (i, var) in vec_for_table.iter().enumerate() {
-                    body.row(30.0, |mut row| {
-                        match var_data.var {
-                            SaveDataVar::ScoreList | SaveDataVar::TimeTrialList | SaveDataVar::StageFlagList => {
-                                let level_name = int_to_stage_name(i, false);
+
+            match var_data.int_type {
+                SaveDataIntType::Arrayi32(_)
+                | SaveDataIntType::Arrayu32(_)
+                | SaveDataIntType::Arrayu8(_) => {
+                    let vec_for_table = get_int_array_from_save_data(
+                        save_data_guard.to_vec(),
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        &var_data.int_type,
+                    );
+
+                    table.body(|mut body| {
+                        for (i, var) in vec_for_table.iter().enumerate() {
+                            body.row(30.0, |mut row| {
+                                match var_data.var {
+                                    SaveDataVar::ScoreList
+                                    | SaveDataVar::TimeTrialList
+                                    | SaveDataVar::StageFlagList => {
+                                        let level_name = int_to_stage_name(i, false);
+                                        row.col(|ui| {
+                                            ui.label(level_name);
+                                        });
+                                    }
+                                    SaveDataVar::MissionRewardFlag => {
+                                        let level_name = int_to_stage_name(i, true);
+                                        row.col(|ui| {
+                                            ui.label(level_name);
+                                        });
+                                    }
+                                    _ => {
+                                        row.col(|ui| {
+                                            ui.label(i.to_string());
+                                        });
+                                    }
+                                }
+
                                 row.col(|ui| {
-                                    ui.label(level_name);
+                                    let bytes_amount: u32 = match var_data.int_type {
+                                        save_data_info::SaveDataIntType::Arrayi32(_) => 4,
+                                        save_data_info::SaveDataIntType::Arrayu32(_) => 4,
+                                        save_data_info::SaveDataIntType::Arrayu8(_) => 1,
+                                        _ => 0, // should never happen
+                                    };
+                                    ui.label(format!(
+                                        "{:X}",
+                                        (var_data.slot_base_add
+                                            + var_data.offset
+                                            + (i as u32 * bytes_amount))
+                                    ));
                                 });
-                            },
-                            SaveDataVar::MissionRewardFlag => {
-                                let level_name = int_to_stage_name(i, true);
-                                row.col(|ui| {
-                                    ui.label(level_name);
+                                row.col(|ui| match var_data.var {
+                                    SaveDataVar::TimeTrialList | SaveDataVar::TimeTrialCoopList => {
+                                        let seconds_total = var / 100;
+                                        let ms = var - seconds_total * 100;
+                                        let minutes = seconds_total / 60;
+                                        let seconds = seconds_total % 60;
+
+                                        let ms_str: String;
+                                        if ms < 10 {
+                                            ms_str = format!("0{}", ms);
+                                        } else {
+                                            ms_str = ms.to_string();
+                                        }
+
+                                        let seconds_str: String;
+                                        if seconds < 10 {
+                                            seconds_str = format!("0{}", seconds);
+                                        } else {
+                                            seconds_str = seconds.to_string();
+                                        }
+
+                                        ui.label(format!("{}:{}.{}", minutes, seconds_str, ms_str));
+                                    }
+                                    _ => {
+                                        ui.label(var.to_string());
+                                    }
                                 });
-                            },
-                            _ => {
-                                row.col(|ui| {
-                                    ui.label(i.to_string());
-                                });
-                            }
+                            });
                         }
-
-                        row.col(|ui| {
-                            let bytes_amount: u32 = match var_data.int_type {
-                                save_data_info::SaveDataIntType::Arrayi32(_) => 4,
-                                save_data_info::SaveDataIntType::Arrayu32(_) => 4,
-                                save_data_info::SaveDataIntType::Arrayu8(_) => 1,
-                                _ => 0, // should never happen
-                            };
-                            ui.label(format!(
-                                "{:X}",
-                                (var_data.slot_base_add
-                                    + var_data.offset
-                                    + (i as u32 * bytes_amount))
-                            ));
-                        });
-                        row.col(|ui| match var_data.var {
-                            SaveDataVar::TimeTrialList | SaveDataVar::TimeTrialCoopList => {
-                                let seconds_total = var / 100;
-                                let ms = var - seconds_total * 100;
-                                let minutes = seconds_total / 60;
-                                let seconds = seconds_total % 60;
-
-                                let ms_str: String;
-                                if ms < 10 {
-                                    ms_str = format!("0{}", ms);
-                                } else {
-                                    ms_str = ms.to_string();
-                                }
-
-                                let seconds_str: String;
-                                if seconds < 10 {
-                                    seconds_str = format!("0{}", seconds);
-                                } else {
-                                    seconds_str = seconds.to_string();
-                                }
-
-                                ui.label(format!("{}:{}.{}", minutes, seconds_str, ms_str));
-                            }
-                            _ => {
-                                ui.label(var.to_string());
-                            }
-                        });
-                    })
+                    });
                 }
-            });
+
+                SaveDataIntType::SFigureDisplayInfoArray(array_len) => {
+                    let vec_for_table = get_figure_info_from_save_data(
+                        save_data_guard.to_vec(),
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        array_len,
+                    );
+
+                    table.body(|mut body| {
+                        for (i, figure_info) in vec_for_table.iter().enumerate() {
+                            let bytes_amount: u32 = 8;
+
+                            body.row(30.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label(format!("{} ID", i));
+                                });
+
+                                row.col(|ui| {
+                                    ui.label(format!(
+                                        "{:X}",
+                                        (var_data.slot_base_add
+                                            + var_data.offset
+                                            + (i as u32 * bytes_amount))
+                                    ));
+                                });
+                                row.col(|ui| {
+                                    ui.label(figure_info.figure_id.to_string());
+                                });
+                            });
+
+                            body.row(30.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label(format!("{} Angle", i));
+                                });
+
+                                row.col(|ui| {
+                                    ui.label(format!(
+                                        "{:X}",
+                                        (var_data.slot_base_add
+                                            + var_data.offset
+                                            + 4
+                                            + (i as u32 * bytes_amount))
+                                    ));
+                                });
+                                row.col(|ui| {
+                                    ui.label(format!("{:.1}", figure_info.angle));
+                                });
+                            });
+                        }
+                    });
+                }
+                SaveDataIntType::Bool
+                | SaveDataIntType::U32
+                | SaveDataIntType::I32
+                | SaveDataIntType::ArrayText(_) => {
+                    println!("Not an array!");
+                }
+            }
         });
     }
 }

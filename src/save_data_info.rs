@@ -131,6 +131,7 @@ pub enum SaveDataIntType {
     Arrayu32(u32),
     Arrayu8(u32),
     ArrayText(u32),
+    SFigureDisplayInfoArray(u32),
 }
 
 #[derive(Debug, Clone)]

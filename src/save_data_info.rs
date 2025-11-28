@@ -286,12 +286,7 @@ pub fn costume_int_to_name(costume_id: i32) -> String {
 }
 
 pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
-    
-    let id_to_match = if pac_village_start {
-        id
-    } else {
-        id + 1
-    };
+    let id_to_match = if pac_village_start { id } else { id + 1 };
 
     match id_to_match {
         0 => "Pac-Village",
@@ -335,6 +330,28 @@ pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
         38 => "Rolling Around On the Island",
         39 => "Supersonic Tricky Railroad",
         40 => "300 IQ Evil Genius",
+        _ => "Unknown",
+    }
+    .to_string()
+}
+
+pub fn int_to_maze_name(id: usize) -> String {
+    match id {
+        0 => "1-1",
+        1 => "1-2",
+        2 => "2-1",
+        3 => "2-2",
+        4 => "2-3",
+        5 => "3-1",
+        6 => "3-2",
+        7 => "3-3",
+        8 => "4-1",
+        9 => "4-2",
+        10 => "4-3",
+        11 => "5-1",
+        12 => "5-2",
+        13 => "6-1",
+        14 => "6-2",
         _ => "Unknown",
     }
     .to_string()

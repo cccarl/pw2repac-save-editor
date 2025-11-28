@@ -491,7 +491,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         // TODO Capsule flag here
         SaveDataVar::StageCherryFlag => SaveFileData {
             variable_name: "m_iStageCherryFlag".into(),
-            variable_name_simple: "Cherry Flag List".into(),
+            variable_name_simple: "Cherries Obtained Bitfield".into(),
             offset: 0x89C,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -499,7 +499,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageStrawberryFlag => SaveFileData {
             variable_name: "m_iStageStrawberryFlag".into(),
-            variable_name_simple: "Strawberry Flag List".into(),
+            variable_name_simple: "Strawberries Obtained Bitfield".into(),
             offset: 0x9C8,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -507,7 +507,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageOrangeFlag => SaveFileData {
             variable_name: "m_iStageOrangeFlag".into(),
-            variable_name_simple: "Orange Flag List".into(),
+            variable_name_simple: "Oranges Obtained Bitfield".into(),
             offset: 0xAF4,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -515,7 +515,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageAppleFlag => SaveFileData {
             variable_name: "m_iStageAppleFlag".into(),
-            variable_name_simple: "Apple Flag List".into(),
+            variable_name_simple: "Apples Obtained Bitfield".into(),
             offset: 0xC20,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -523,7 +523,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageMelonFlag => SaveFileData {
             variable_name: "m_iStageMelonFlag".into(),
-            variable_name_simple: "Melon Flag List".into(),
+            variable_name_simple: "Melons Obtained Bitfield".into(),
             offset: 0xD4C,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -563,7 +563,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageMelonNum => SaveFileData {
             variable_name: "m_iStageMelonGetNum".into(),
-            variable_name_simple: "Melom Per Level".into(),
+            variable_name_simple: "Melon Per Level".into(),
             offset: 0x1328,
             int_type: SaveDataIntType::Arrayi32(35),
             slot_base_add,
@@ -573,7 +573,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iVillageCherryFlag".into(),
             variable_name_simple: "Village Cherry Flags".into(),
             offset: 0x1454,
-            int_type: SaveDataIntType::Arrayi32(35),
+            int_type: SaveDataIntType::Arrayi32(26),
             slot_base_add,
             var: req_data,
         },
@@ -581,7 +581,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iVillageStrawberryFlag".into(),
             variable_name_simple: "Village Strawberry Flags".into(),
             offset: 0x01610,
-            int_type: SaveDataIntType::Arrayi32(35),
+            int_type: SaveDataIntType::Arrayi32(29),
             slot_base_add,
             var: req_data,
         },
@@ -589,7 +589,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iVillageOrangeFlag".into(),
             variable_name_simple: "Village Orange Flags".into(),
             offset: 0x17CC,
-            int_type: SaveDataIntType::Arrayi32(35),
+            int_type: SaveDataIntType::Arrayi32(17),
             slot_base_add,
             var: req_data,
         },
@@ -597,7 +597,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iVillageAppleFlag".into(),
             variable_name_simple: "Village Apple Flags".into(),
             offset: 0x1988,
-            int_type: SaveDataIntType::Arrayi32(35),
+            int_type: SaveDataIntType::Arrayi32(22),
             slot_base_add,
             var: req_data,
         },
@@ -605,7 +605,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iVillageMelonFlag".into(),
             variable_name_simple: "Village Melon Flags".into(),
             offset: 0x1B44,
-            int_type: SaveDataIntType::Arrayi32(35),
+            int_type: SaveDataIntType::Arrayi32(32),
             slot_base_add,
             var: req_data,
         },
@@ -651,7 +651,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::VillageGFFlag => SaveFileData {
             variable_name: "m_iVillageGFFlag".into(),
-            variable_name_simple: "Village GF Flag".into(),
+            variable_name_simple: "Village GF Bitfield".into(),
             offset: 0x1D14,
             int_type: SaveDataIntType::U32,
             slot_base_add,
@@ -667,7 +667,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::CameraSpeedY => SaveFileData {
             variable_name: "m_iCameraSpeedUD".into(),
-            variable_name_simple: "Camera Speed Y".into(),
+            variable_name_simple: "Camera Sensitivity Y".into(),
             offset: 0x1D1C,
             int_type: SaveDataIntType::I32,
             slot_base_add,
@@ -675,7 +675,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::CameraSpeedX => SaveFileData {
             variable_name: "m_iCameraSpeedLR".into(),
-            variable_name_simple: "Camera Speed X".into(),
+            variable_name_simple: "Camera Sensitivity X".into(),
             offset: 0x1D20,
             int_type: SaveDataIntType::I32,
             slot_base_add,
@@ -683,43 +683,41 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::CameraControlY => SaveFileData {
             variable_name: "m_iCameraControlUD".into(),
-            // TODO check if this really is camera assist
-            variable_name_simple: "Camera Assist Y".into(),
+            variable_name_simple: "Reverse Vertical Camera".into(),
             offset: 0x1D24,
-            int_type: SaveDataIntType::I32,
+            int_type: SaveDataIntType::Bool, // game code says i32
             slot_base_add,
             var: req_data,
         },
         SaveDataVar::CameraControlX => SaveFileData {
             variable_name: "m_iCameraControlLR".into(),
-            variable_name_simple: "Camera Assist X".into(),
-            offset: 0x1D2C,
-            int_type: SaveDataIntType::I32,
+            variable_name_simple: "Reverse Horizontal Camera".into(),
+            offset: 0x1D28,
+            int_type: SaveDataIntType::Bool, // game code says i32
             slot_base_add,
             var: req_data,
         },
         SaveDataVar::CameraAssistFlag => SaveFileData {
             variable_name: "m_iCameraAssistFlag".into(),
-            variable_name_simple: "Camera Assist Flag".into(),
-            offset: 0x1D30,
-            int_type: SaveDataIntType::I32,
+            variable_name_simple: "Disable Camera Assist".into(),
+            offset: 0x1D2C,
+            int_type: SaveDataIntType::Bool, // game code says i32
             slot_base_add,
             var: req_data,
         },
         SaveDataVar::CameraYAutoRotateFlag => SaveFileData {
             variable_name: "m_iCameraYAutoRotFlag".into(),
-            variable_name_simple: "Camera Autorotate Flag".into(),
-            offset: 0x1D34,
-            int_type: SaveDataIntType::I32,
+            variable_name_simple: "Disable Player Tracking Camera".into(),
+            offset: 0x1D30,
+            int_type: SaveDataIntType::Bool, // game code says i32
             slot_base_add,
             var: req_data,
         },
         SaveDataVar::SwimControlY => SaveFileData {
             variable_name: "m_iSwimControlUD".into(),
-            variable_name_simple: "Swim Control Y".into(),
-            offset: 0x1D38,
-            // the decompilation says it's an array but since it's 1 element we can just treat it as i32
-            int_type: SaveDataIntType::I32,
+            variable_name_simple: "Reverse Vertical Swim Control (?)".into(),
+            offset: 0x1D34,
+            int_type: SaveDataIntType::Arrayi32(2),
             slot_base_add,
             var: req_data,
         },
@@ -856,7 +854,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::PacManiaStageNum => SaveFileData {
             variable_name: "m_iPacManiaStageNum".into(),
-            variable_name_simple: "Pac-Mania Stage Number".into(),
+            variable_name_simple: "Pac-Mania Best Stage".into(),
             offset: 0x2DD8,
             int_type: SaveDataIntType::I32,
             slot_base_add,
@@ -872,7 +870,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::PacAttackLevelNum => SaveFileData {
             variable_name: "m_iPacAttackLevelNum".into(),
-            variable_name_simple: "Pac-Attack Level Number".into(),
+            variable_name_simple: "Pac-Attack Best Level".into(),
             offset: 0x2DE0,
             int_type: SaveDataIntType::Arrayi32(4),
             slot_base_add,

@@ -10,7 +10,7 @@ use std::sync::{LazyLock, Mutex};
 use crate::{
     save_data_info::{
         SaveDataIntType, SaveFileData, bgm_music_str_to_name, costume_int_to_name,
-        int_to_stage_name,
+        int_to_maze_name, int_to_stage_name,
     },
     save_file_parser::{
         get_all_save_file_vars, get_figure_info_from_save_data, get_int_array_from_save_data,
@@ -538,10 +538,27 @@ impl App {
                                 match var_data.var {
                                     SaveDataVar::ScoreList
                                     | SaveDataVar::TimeTrialList
-                                    | SaveDataVar::StageFlagList => {
+                                    | SaveDataVar::TimeTrialCoopList
+                                    | SaveDataVar::StageFlagList
+                                    | SaveDataVar::StageCherryFlag
+                                    | SaveDataVar::StageStrawberryFlag
+                                    | SaveDataVar::StageOrangeFlag
+                                    | SaveDataVar::StageAppleFlag
+                                    | SaveDataVar::StageMelonFlag
+                                    | SaveDataVar::StageCherryNum
+                                    | SaveDataVar::StageStrawberryNum
+                                    | SaveDataVar::StageOrangeNum
+                                    | SaveDataVar::StageAppleNum
+                                    | SaveDataVar::StageMelonNum => {
                                         let level_name = int_to_stage_name(i, false);
                                         row.col(|ui| {
                                             ui.label(level_name);
+                                        });
+                                    }
+                                    SaveDataVar::StageMazeFlagList | SaveDataVar::MazeFlagList => {
+                                        let maze = int_to_maze_name(i);
+                                        row.col(|ui| {
+                                            ui.label(maze);
                                         });
                                     }
                                     SaveDataVar::MissionRewardFlag => {
@@ -593,6 +610,29 @@ impl App {
                                         }
 
                                         ui.label(format!("{}:{}.{}", minutes, seconds_str, ms_str));
+                                    }
+                                    SaveDataVar::StageFlagList | SaveDataVar::MazeFlagList => {
+                                        match var {
+                                            0 => ui.label(format!("0 Locked")),
+                                            1 => ui.label(format!("1 Unlocked")),
+                                            2 => ui.label(format!("2 Entered")),
+                                            3 => ui.label(format!("3 Complete")),
+                                            _ => ui.label(var.to_string()),
+                                        };
+                                    }
+                                    SaveDataVar::StageCherryFlag
+                                    | SaveDataVar::StageStrawberryFlag
+                                    | SaveDataVar::StageOrangeFlag
+                                    | SaveDataVar::StageAppleFlag
+                                    | SaveDataVar::StageMelonFlag => {
+                                        ui.label(format!("{} ({:b})", var, var));
+                                    }
+                                    SaveDataVar::StageMazeFlagList => {
+                                        match var {
+                                            0 => ui.label(format!("0 Locked")),
+                                            1 => ui.label(format!("1 Unlocked")),
+                                            _ => ui.label(var.to_string()),
+                                        };
                                     }
                                     _ => {
                                         ui.label(var.to_string());

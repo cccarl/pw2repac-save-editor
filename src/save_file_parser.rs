@@ -164,6 +164,44 @@ pub fn get_all_save_file_vars(slot: u8) -> Vec<SaveFileData> {
     all_vars
 }
 
+pub fn get_basic_save_file_vars(slot: u8) -> Vec<SaveFileData> {
+    let mut basic_vars = vec![];
+    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeHours, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeMinutes, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeSeconds, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::ScoreList, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::TimeTrialList, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::StageMazeFlagList, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::MazesScoreList, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::Lives, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::MagicKeyUnlocked, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::JukeBoxBGM, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::JukeBoxBGMCollab, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::MedalNum, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::CameraSpeedX, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::CameraSpeedY, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::CameraControlX, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::CameraControlY, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::CameraAssistFlag, slot));
+    basic_vars.push(get_save_file_variable(
+        SaveDataVar::CameraYAutoRotateFlag,
+        slot,
+    ));
+    basic_vars.push(get_save_file_variable(SaveDataVar::PlayerSkinId, slot));
+    basic_vars.push(get_save_file_variable(
+        SaveDataVar::PlayerSkinIdCollab,
+        slot,
+    ));
+    basic_vars.push(get_save_file_variable(SaveDataVar::OriginalHighScore, slot));
+    basic_vars.push(get_save_file_variable(SaveDataVar::PacmaniaHighScore, slot));
+    basic_vars.push(get_save_file_variable(
+        SaveDataVar::PacAttackHighScore,
+        slot,
+    ));
+
+    basic_vars
+}
+
 pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
     let slot_base_add: u32 = get_save_slot_base_add(slot);
 
@@ -258,7 +296,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageMazeFlagList => SaveFileData {
             variable_name: "m_bStageMazeFlagList".into(),
-            variable_name_simple: "Stage Maze Flag".into(),
+            variable_name_simple: "Maze Unlocked Flags".into(),
             offset: 0x450,
             int_type: SaveDataIntType::Arrayu8(MAZES_COUNT),
             slot_base_add,
@@ -806,7 +844,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::UnlockStageSelectFlag => SaveFileData {
             variable_name: "m_uUnlockStageSelectFlag".into(),
-            variable_name_simple: "Unlock Stage Select Flag".into(),
+            variable_name_simple: "Unlock Stage Select Bitfield".into(),
             offset: 0x2DB8,
             int_type: SaveDataIntType::I32,
             slot_base_add,

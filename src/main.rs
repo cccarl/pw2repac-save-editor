@@ -13,8 +13,8 @@ use crate::{
         int_to_maze_name, int_to_stage_name,
     },
     save_file_parser::{
-        get_all_save_file_vars, get_figure_info_from_save_data, get_int_array_from_save_data,
-        get_int_value_from_save_data, get_text_value_from_save_data,
+        get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
+        get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
     },
 };
 
@@ -45,6 +45,7 @@ struct App {
     single_save_file_view: SaveFileCurrentView,
     show_save_code_variables: bool,
     show_addresses: bool,
+    show_simple_data_only: bool,
     save_slot_chosen: u8,
     scroll_to_top: bool,
 }
@@ -52,7 +53,7 @@ struct App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         set_styles(ctx);
-        show_top_bar(ctx);
+        self.show_top_bar(ctx);
         match self.current_view {
             CurrentMenu::Main => {
                 self.show_main_menu(ctx);
@@ -131,22 +132,31 @@ fn set_styles(ctx: &Context) {
         ),
     ]
     .into();
+    style.spacing.item_spacing.x = 20.;
     ctx.set_style(style);
 }
 
-fn show_top_bar(ctx: &Context) {
-    TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-        egui::MenuBar::new().ui(ui, |ui| {
-            ui.menu_button("File", |ui| {
-                if ui.button("Exit").clicked() {
-                    ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
-                }
+impl App {
+    fn show_top_bar(&mut self, ctx: &Context) {
+        TopBottomPanel::top("menu_bar").show(ctx, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Reload Save Data").clicked() {
+                        reload_save_file();
+                    }
+                    if ui.button("Exit").clicked() {
+                        ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
+                    }
+                });
+                ui.menu_button("View", |ui| {
+                    ui.checkbox(&mut self.show_simple_data_only, "Basic Data Only");
+                    ui.checkbox(&mut self.show_addresses, "Show Addresses");
+                    ui.checkbox(&mut self.show_save_code_variables, "Show Names in Code");
+                });
             });
         });
-    });
-}
+    }
 
-impl App {
     fn show_main_menu(&mut self, ctx: &Context) {
         CentralPanel::default().show(ctx, |ui| {
             let available_space = ui.available_size();
@@ -313,11 +323,6 @@ impl App {
                 if ui.button("Go Back").clicked() {
                     self.current_view = CurrentMenu::Main;
                 };
-                if ui.button("Reload Save Data").clicked() {
-                    reload_save_file();
-                };
-                ui.checkbox(&mut self.show_addresses, "Show Addresses");
-                ui.checkbox(&mut self.show_save_code_variables, "Show Names in Code");
             });
 
             let mut extra_columns = 1;
@@ -361,11 +366,15 @@ impl App {
                     });
                 });
 
-            let all_vars = get_all_save_file_vars(self.save_slot_chosen);
+            let table_vars = if self.show_simple_data_only {
+                get_basic_save_file_vars(self.save_slot_chosen)
+            } else {
+                get_all_save_file_vars(self.save_slot_chosen)
+            };
             let save_data_guard = SAVE_DATA.lock().unwrap();
 
             table.body(|mut body| {
-                for var_data in all_vars {
+                for var_data in table_vars {
                     let value_str: String = match var_data.int_type {
                         save_data_info::SaveDataIntType::Bool => {
                             let val_int = get_int_value_from_save_data(
@@ -475,9 +484,6 @@ impl App {
                 if ui.button("Go Back To All Data").clicked() {
                     self.single_save_file_view = SaveFileCurrentView::AllVars;
                 };
-                if ui.button("Reload Save Data").clicked() {
-                    reload_save_file();
-                };
             });
 
             let table = TableBuilder::new(ui)
@@ -555,7 +561,9 @@ impl App {
                                             ui.label(level_name);
                                         });
                                     }
-                                    SaveDataVar::StageMazeFlagList | SaveDataVar::MazeFlagList => {
+                                    SaveDataVar::StageMazeFlagList
+                                    | SaveDataVar::MazeFlagList
+                                    | SaveDataVar::MazesScoreList => {
                                         let maze = int_to_maze_name(i);
                                         row.col(|ui| {
                                             ui.label(maze);

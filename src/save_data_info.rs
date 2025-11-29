@@ -128,7 +128,7 @@ pub enum SaveDataIntType {
     U32,
     I32,
     Arrayi32(u32), // stores its length
-    Arrayu32(u32),
+    //Arrayu32(u32),
     Arrayu8(u32),
     ArrayText(u32),
     SFigureDisplayInfoArray(u32),
@@ -355,4 +355,75 @@ pub fn int_to_maze_name(id: usize) -> String {
         _ => "Unknown",
     }
     .to_string()
+}
+
+pub fn array_index_to_input_type(i: usize) -> String {
+    match i {
+        48 => "KB Jump",
+        49 => "KB Pac-Dot Attack",
+        50 => "KB Flip Kick",
+        51 => "KB Rev Roll",
+        53 => "KB Flutter",
+        57 => "KB Reset Camera",
+        72 => "Controller Jump",
+        73 => "Controller Pac-Dot Attack",
+        74 => "Controller Flip Kick",
+        75 => "Controller Rev Roll",
+        77 => "Controller Flutter",
+        81 => "Controller Reset Camera",
+        98 => "KB Change Maze Zoom",
+        122 => "Controller Change Maze Zoom",
+        432 => "KB Climb cliff",
+        434 => "KB Let go of cliff",
+        456 => "Controller Climb Cliff",
+        458 => "Controller Let go of Cliff",
+        480 => "KB Dolphin Kick",
+        485 => "KB Float",
+        495 => "KB Dive",
+        503 => "Controller Dolphin Kick",
+        509 => "Controller Float",
+        519 => "Controller Dive",
+        _ => return i.to_string()
+    }.to_string()
+}
+
+pub fn int_to_key(key: i64) -> String {
+    let key_str = match key {
+        1 => "Space",
+        15 => "A",
+        16 => "B",
+        17 => "C",
+        18 => "D",
+        19 => "E",
+        20 => "F",
+        21 => "G",
+        32 => "R",
+        38 => "X",
+        40 => "Z",
+        51 => "Shift",
+        55 => "Ctrl",
+        1000 => "Left Click",
+        1001 => "Right Click",
+        _ => return key.to_string()
+    };
+
+    format!("{key} {key_str}")
+}
+
+pub fn int_to_controller_btn(btn: i64) -> String {
+    let btn_str = match btn {
+        0 => "A",
+        1 => "B",
+        2 => "X",
+        3 => "Y",
+        4 => "L",
+        5 => "R",
+        14 => "ZL",
+        15 => "ZR",
+        8 => "Left Stick Click",
+        9 => "Right Stick Click",
+        _ => return btn.to_string()
+    };
+
+    format!("{btn} {btn_str}")
 }

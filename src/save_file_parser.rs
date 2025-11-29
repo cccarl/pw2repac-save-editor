@@ -53,7 +53,6 @@ pub fn get_int_value_from_save_data(
             value_raw.into()
         }
         SaveDataIntType::Arrayi32(_)
-        | SaveDataIntType::Arrayu32(_)
         | SaveDataIntType::ArrayText(_)
         | SaveDataIntType::Arrayu8(_)
         | SaveDataIntType::SFigureDisplayInfoArray(_) => {
@@ -77,17 +76,6 @@ pub fn get_int_array_from_save_data(
                     &save_file_raw[(slot_base as usize + offset as usize + (i * 4))
                         ..(slot_base as usize + offset as usize + 4 + (i * 4))];
                 let value_raw = i32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
-                final_vec.push(value_raw as i64);
-            }
-            final_vec
-        }
-        SaveDataIntType::Arrayu32(len) => {
-            let mut final_vec: Vec<i64> = vec![];
-            for i in 0..(*len as usize) {
-                let save_data_slice: &[u8] =
-                    &save_file_raw[(slot_base as usize + offset as usize + (i * 4))
-                        ..(slot_base as usize + offset as usize + 4 + (i * 4))];
-                let value_raw = u32::from_le_bytes(save_data_slice.try_into().unwrap_or_default());
                 final_vec.push(value_raw as i64);
             }
             final_vec
@@ -187,6 +175,7 @@ pub fn get_basic_save_file_vars(slot: u8) -> Vec<SaveFileData> {
         SaveDataVar::CameraYAutoRotateFlag,
         slot,
     ));
+    basic_vars.push(get_save_file_variable(SaveDataVar::KeyConfigP1, slot));
     basic_vars.push(get_save_file_variable(SaveDataVar::PlayerSkinId, slot));
     basic_vars.push(get_save_file_variable(
         SaveDataVar::PlayerSkinIdCollab,
@@ -290,7 +279,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_uFriendTalkList".into(),
             variable_name_simple: "Friends Talk List".into(),
             offset: 0x414,
-            int_type: SaveDataIntType::Arrayu32(34),
+            int_type: SaveDataIntType::Arrayi32(34), // game says u32 even tho theres clear negs
             slot_base_add,
             var: req_data,
         },
@@ -966,7 +955,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::KeyConfigP1 => SaveFileData {
             variable_name: "m_keyconfigSave1P".into(),
-            variable_name_simple: "Key Config Player 1".into(),
+            variable_name_simple: "Inputs Config".into(),
             offset: 0x2F04,
             int_type: SaveDataIntType::Arrayi32(672),
             slot_base_add,
@@ -974,7 +963,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::KeyConfigP2 => SaveFileData {
             variable_name: "m_keyconfigSave2P".into(),
-            variable_name_simple: "Key Config Player 2".into(),
+            variable_name_simple: "Inputs Config Player 2".into(),
             offset: 0x3984,
             int_type: SaveDataIntType::Arrayi32(672),
             slot_base_add,

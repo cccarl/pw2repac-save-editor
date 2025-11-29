@@ -1,21 +1,20 @@
 mod save_data_info;
 mod save_file_parser;
+mod new_file;
 
-use eframe::egui::{self, CentralPanel, Context, FontId, TextStyle, TopBottomPanel};
+use eframe::egui::{self, CentralPanel, Context, FontId, IconData, TextStyle, TopBottomPanel};
 use egui_extras::{Column, TableBuilder};
 use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
 use crate::{
-    save_data_info::{
-        SaveDataIntType, SaveFileData, bgm_music_str_to_name, costume_int_to_name,
-        int_to_maze_name, int_to_stage_name,
-    },
-    save_file_parser::{
+    new_file::get_new_save_file, save_data_info::{
+        SaveDataIntType, SaveFileData, array_index_to_input_type, bgm_music_str_to_name, costume_int_to_name, get_save_slot_base_add, int_to_controller_btn, int_to_key, int_to_maze_name, int_to_stage_name
+    }, save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
         get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
-    },
+    }
 };
 
 //const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
@@ -36,7 +35,7 @@ enum CurrentMenu {
 enum SaveFileCurrentView {
     #[default]
     AllVars,
-    GenericArray(SaveFileData),
+    SingleArray(SaveFileData),
 }
 
 #[derive(Default)]
@@ -61,7 +60,7 @@ impl eframe::App for App {
             CurrentMenu::FileDetails => {
                 match &self.single_save_file_view {
                     SaveFileCurrentView::AllVars => self.show_details_save_file(ctx),
-                    SaveFileCurrentView::GenericArray(var_data) => {
+                    SaveFileCurrentView::SingleArray(var_data) => {
                         self.show_single_array_table(ctx, var_data.clone());
                     }
                 };
@@ -74,11 +73,15 @@ fn main() -> Result<(), eframe::Error> {
     println!("Hello, world!");
     reload_save_file();
 
-    // GUI starts here
-    let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_resizable(true)
-            .with_inner_size([900., 600.]),
+    let icon = load_icon();
+
+    let viewport = eframe::egui::ViewportBuilder::default()
+        .with_resizable(true)
+        .with_inner_size([900., 600.])
+        .with_icon(icon);
+
+    let options: eframe::NativeOptions = eframe::NativeOptions {
+        viewport,
         ..Default::default()
     };
 
@@ -109,6 +112,21 @@ fn reload_save_file() {
             None
         }
     };
+}
+
+fn load_icon() -> IconData {
+    let image = image::load_from_memory(include_bytes!("../pacattack.png"))
+        .expect("Failed to load icon")
+        .to_rgba8();
+    let width = image.width();
+    let height = image.height();
+    let rgba = image.into_raw(); // Vec<u8>
+
+    IconData {
+        rgba,
+        width,
+        height,
+    }
 }
 
 fn set_styles(ctx: &Context) {
@@ -201,7 +219,7 @@ impl App {
             }
         };
 
-        let save_data_guard = SAVE_DATA.lock().unwrap();
+        let mut save_data_guard = SAVE_DATA.lock().unwrap();
 
         let file_exists_data = get_save_file_variable(SaveDataVar::FileExists, save_slot);
         let file_exists = get_int_value_from_save_data(
@@ -213,7 +231,13 @@ impl App {
 
         if file_exists == 0 {
             if ui.button("Create Save File").clicked() {
-                println!("TODO!");
+                let new_save_file = get_new_save_file();
+                let start_add = get_save_slot_base_add(save_slot);
+
+                for (i, new_save_byte) in new_save_file.iter().enumerate() {
+                    save_data_guard[start_add as usize + i] = *new_save_byte;
+                }
+
             }
             return;
         }
@@ -413,7 +437,6 @@ impl App {
                         }
                         save_data_info::SaveDataIntType::Arrayi32(_)
                         | save_data_info::SaveDataIntType::Arrayu8(_)
-                        | save_data_info::SaveDataIntType::Arrayu32(_)
                         | save_data_info::SaveDataIntType::SFigureDisplayInfoArray(_) => {
                             "list".to_string()
                         }
@@ -447,7 +470,7 @@ impl App {
                                 if ui.button("Open").clicked() {
                                     self.scroll_to_top = true;
                                     self.single_save_file_view =
-                                        SaveFileCurrentView::GenericArray(var_data);
+                                        SaveFileCurrentView::SingleArray(var_data);
                                 }
                             } else {
                                 match var_data.var {
@@ -528,9 +551,7 @@ impl App {
             let save_data_guard = SAVE_DATA.lock().unwrap();
 
             match var_data.int_type {
-                SaveDataIntType::Arrayi32(_)
-                | SaveDataIntType::Arrayu32(_)
-                | SaveDataIntType::Arrayu8(_) => {
+                SaveDataIntType::Arrayi32(_) | SaveDataIntType::Arrayu8(_) => {
                     let vec_for_table = get_int_array_from_save_data(
                         save_data_guard.to_vec(),
                         var_data.slot_base_add,
@@ -540,6 +561,20 @@ impl App {
 
                     table.body(|mut body| {
                         for (i, var) in vec_for_table.iter().enumerate() {
+                            // TODO somehow sort by name in input config view
+                            if self.show_simple_data_only
+                                && (var_data.var == SaveDataVar::KeyConfigP1
+                                    || var_data.var == SaveDataVar::KeyConfigP2)
+                            {
+                                let indexes_with_main_config = [
+                                    72, 73, 75, 74, 456, 458, 509, 519, 503, 77, 81, 122, 48, 49,
+                                    51, 50, 432, 434, 485, 495, 480, 53, 57, 98,
+                                ];
+                                if !indexes_with_main_config.contains(&i) {
+                                    continue;
+                                }
+                            }
+
                             body.row(30.0, |mut row| {
                                 match var_data.var {
                                     SaveDataVar::ScoreList
@@ -575,6 +610,12 @@ impl App {
                                             ui.label(level_name);
                                         });
                                     }
+                                    SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
+                                        let movement_type = array_index_to_input_type(i);
+                                        row.col(|ui| {
+                                            ui.label(movement_type);
+                                        });
+                                    }
                                     _ => {
                                         row.col(|ui| {
                                             ui.label(i.to_string());
@@ -585,7 +626,6 @@ impl App {
                                 row.col(|ui| {
                                     let bytes_amount: u32 = match var_data.int_type {
                                         save_data_info::SaveDataIntType::Arrayi32(_) => 4,
-                                        save_data_info::SaveDataIntType::Arrayu32(_) => 4,
                                         save_data_info::SaveDataIntType::Arrayu8(_) => 1,
                                         _ => 0, // should never happen
                                     };
@@ -628,6 +668,16 @@ impl App {
                                             _ => ui.label(var.to_string()),
                                         };
                                     }
+                                    SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
+                                        let is_controller =
+                                            array_index_to_input_type(i).contains("Controller");
+                                        if is_controller {
+                                            ui.label(int_to_controller_btn(*var));
+                                        } else {
+                                            ui.label(int_to_key(*var));
+                                        }
+                                    }
+
                                     SaveDataVar::StageCherryFlag
                                     | SaveDataVar::StageStrawberryFlag
                                     | SaveDataVar::StageOrangeFlag

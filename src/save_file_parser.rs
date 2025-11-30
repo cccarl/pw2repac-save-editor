@@ -11,24 +11,47 @@ pub struct SFigureDisplayInfo {
     pub angle: f32,
 }
 
-pub fn read_save_file() -> Result<Vec<u8>, String> {
+fn get_file_path() -> Result<String, String> {
     let pac_save_path_res = env::var("LOCALAPPDATA");
-
-    let pac_save_path = match pac_save_path_res {
+    match pac_save_path_res {
         Ok(mut local_app_data_path) => {
             local_app_data_path.insert_str(local_app_data_path.len(), "\\BANDAI NAMCO Entertainment\\PAC-MAN WORLD2 Re-Pac\\Saved\\SaveGames\\181732721\\DAT00000.dat");
-            local_app_data_path
+            Ok(local_app_data_path)
         }
         Err(var_err) => {
             return Err(format!("Error in local data path value: {}", var_err));
         }
-    };
+    }
+}
 
-    let save_file_bytes = fs::read(pac_save_path);
+pub fn read_save_file() -> Result<Vec<u8>, String> {
+    let pac_save_path = get_file_path();
 
-    match save_file_bytes {
-        Ok(vec) => Ok(vec),
-        Err(err) => Err(format!("Error when reading bytes from save file: {}", err)),
+    match pac_save_path {
+        Ok(path) => {
+            let save_file_bytes = fs::read(path);
+
+            match save_file_bytes {
+                Ok(vec) => Ok(vec),
+                Err(err) => Err(format!("Error when reading bytes from save file: {}", err)),
+            }
+        }
+        Err(e) => return Err(e),
+    }
+}
+
+pub fn write_save_file(save_data: Vec<u8>) -> std::io::Result<()> {
+    let pac_save_path = get_file_path();
+
+    match pac_save_path {
+        Ok(path) => {
+            fs::write(path, &save_data)?;
+            Ok(())
+        }
+        Err(e) => {
+            println!("{}", e);
+            Ok(())
+        }
     }
 }
 
@@ -189,6 +212,10 @@ pub fn get_basic_save_file_vars(slot: u8) -> Vec<SaveFileData> {
     ));
 
     basic_vars
+}
+
+pub fn modify_save_data() {
+    // THIS NEXT!!!!!!!!!!!!!!!!
 }
 
 pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {

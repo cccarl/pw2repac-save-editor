@@ -17,7 +17,7 @@ use crate::{
     },
     save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
-        get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
+        get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data, write_save_file,
     },
 };
 
@@ -177,8 +177,22 @@ impl App {
                     if ui.button("Reload Save Data").clicked() {
                         self.reload_save_file();
                     }
-                    if ui.button("Save Changes To File").clicked() {
-                        println!("TODO!!!");
+                    let save_text = if self.edited_save_file {
+                        "Save Changes To File *"
+                    } else {
+                        "Save Changes To File  "
+                    };
+                    if ui.button(save_text).clicked() {
+                        self.edited_save_file = false;
+                        let save_data_guard = SAVE_DATA.lock().unwrap();
+                        match write_save_file(save_data_guard.to_vec()) {
+                            Ok(_) => {
+                                println!("Save successful!");
+                            },
+                            Err(e) => {
+                                println!("ERROR: {}", e);
+                            },
+                        }
                     }
                     if ui.button("Exit").clicked() {
                         if self.edited_save_file {
@@ -855,7 +869,9 @@ impl App {
                     |_ui| {},
                     |ui| {
                         if ui.button("Reload").clicked() {
-                            println!("XD TODO XD");
+                            load_save_file();
+                            self.edited_save_file = false;
+                            ui.close();
                         }
                         if ui.button("Cancel").clicked() {
                             // This causes the current modals `should_close` to return true

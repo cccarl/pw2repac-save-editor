@@ -1,20 +1,24 @@
+mod new_file;
 mod save_data_info;
 mod save_file_parser;
-mod new_file;
 
-use eframe::egui::{self, CentralPanel, Context, FontId, IconData, TextStyle, TopBottomPanel};
+use eframe::egui::{self, CentralPanel, Context, FontId, IconData, TextStyle, TopBottomPanel, Ui};
 use egui_extras::{Column, TableBuilder};
 use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
 use std::sync::{LazyLock, Mutex};
 
 use crate::{
-    new_file::get_new_save_file, save_data_info::{
-        SaveDataIntType, SaveFileData, array_index_to_input_type, bgm_music_str_to_name, costume_int_to_name, get_save_slot_base_add, int_to_controller_btn, int_to_key, int_to_maze_name, int_to_stage_name
-    }, save_file_parser::{
+    new_file::get_new_save_file,
+    save_data_info::{
+        SaveDataIntType, SaveFileData, array_index_to_input_type, bgm_music_str_to_name,
+        costume_int_to_name, get_save_slot_base_add, int_to_controller_btn, int_to_key,
+        int_to_maze_name, int_to_stage_name,
+    },
+    save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
         get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
-    }
+    },
 };
 
 //const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
@@ -47,6 +51,9 @@ struct App {
     show_simple_data_only: bool,
     save_slot_chosen: u8,
     scroll_to_top: bool,
+    edited_save_file: bool,
+    show_confirm_exit_modal: bool,
+    show_confirm_reload_modal: bool,
 }
 
 impl eframe::App for App {
@@ -71,7 +78,7 @@ impl eframe::App for App {
 
 fn main() -> Result<(), eframe::Error> {
     println!("Hello, world!");
-    reload_save_file();
+    load_save_file();
 
     let icon = load_icon();
 
@@ -97,7 +104,7 @@ fn main() -> Result<(), eframe::Error> {
     )
 }
 
-fn reload_save_file() {
+fn load_save_file() {
     let save_file_data_read_res = read_save_file();
 
     match save_file_data_read_res {
@@ -155,15 +162,30 @@ fn set_styles(ctx: &Context) {
 }
 
 impl App {
+    fn reload_save_file(&mut self) {
+        if self.edited_save_file {
+            self.show_confirm_reload_modal = true;
+        } else {
+            load_save_file();
+        }
+    }
+
     fn show_top_bar(&mut self, ctx: &Context) {
         TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("Reload Save Data").clicked() {
-                        reload_save_file();
+                        self.reload_save_file();
+                    }
+                    if ui.button("Save Changes To File").clicked() {
+                        println!("TODO!!!");
                     }
                     if ui.button("Exit").clicked() {
-                        ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
+                        if self.edited_save_file {
+                            self.show_confirm_exit_modal = true;
+                        } else {
+                            ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
+                        }
                     }
                 });
                 ui.menu_button("View", |ui| {
@@ -204,6 +226,8 @@ impl App {
                         self.generate_main_menu_table(ui, 4);
                     });
                 });
+            self.proceed_confirm_reload(ui);
+            self.confirm_close_without_save(ctx, ui);
         });
     }
 
@@ -231,13 +255,13 @@ impl App {
 
         if file_exists == 0 {
             if ui.button("Create Save File").clicked() {
+                self.edited_save_file = true;
                 let new_save_file = get_new_save_file();
                 let start_add = get_save_slot_base_add(save_slot);
 
                 for (i, new_save_byte) in new_save_file.iter().enumerate() {
                     save_data_guard[start_add as usize + i] = *new_save_byte;
                 }
-
             }
             return;
         }
@@ -495,6 +519,8 @@ impl App {
                     });
                 }
             });
+            self.proceed_confirm_reload(ui);
+            self.confirm_close_without_save(ctx, ui);
         });
     }
 
@@ -539,10 +565,12 @@ impl App {
                         }
                     }
 
-                    header.col(|ui| {
-                        ui.strong("Address");
-                        ui.set_width(50.);
-                    });
+                    if self.show_addresses {
+                        header.col(|ui| {
+                            ui.strong("Address");
+                            ui.set_width(50.);
+                        });
+                    }
                     header.col(|ui| {
                         ui.strong("Value");
                     });
@@ -623,19 +651,21 @@ impl App {
                                     }
                                 }
 
-                                row.col(|ui| {
-                                    let bytes_amount: u32 = match var_data.int_type {
-                                        save_data_info::SaveDataIntType::Arrayi32(_) => 4,
-                                        save_data_info::SaveDataIntType::Arrayu8(_) => 1,
-                                        _ => 0, // should never happen
-                                    };
-                                    ui.label(format!(
-                                        "{:X}",
-                                        (var_data.slot_base_add
-                                            + var_data.offset
-                                            + (i as u32 * bytes_amount))
-                                    ));
-                                });
+                                if self.show_addresses {
+                                    row.col(|ui| {
+                                        let bytes_amount: u32 = match var_data.int_type {
+                                            save_data_info::SaveDataIntType::Arrayi32(_) => 4,
+                                            save_data_info::SaveDataIntType::Arrayu8(_) => 1,
+                                            _ => 0, // should never happen
+                                        };
+                                        ui.label(format!(
+                                            "{:X}",
+                                            (var_data.slot_base_add
+                                                + var_data.offset
+                                                + (i as u32 * bytes_amount))
+                                        ));
+                                    });
+                                }
                                 row.col(|ui| match var_data.var {
                                     SaveDataVar::TimeTrialList | SaveDataVar::TimeTrialCoopList => {
                                         let seconds_total = var / 100;
@@ -718,14 +748,16 @@ impl App {
                                     ui.label(format!("{} ID", i));
                                 });
 
-                                row.col(|ui| {
-                                    ui.label(format!(
-                                        "{:X}",
-                                        (var_data.slot_base_add
-                                            + var_data.offset
-                                            + (i as u32 * bytes_amount))
-                                    ));
-                                });
+                                if self.show_addresses {
+                                    row.col(|ui| {
+                                        ui.label(format!(
+                                            "{:X}",
+                                            (var_data.slot_base_add
+                                                + var_data.offset
+                                                + (i as u32 * bytes_amount))
+                                        ));
+                                    });
+                                }
                                 row.col(|ui| {
                                     ui.label(figure_info.figure_id.to_string());
                                 });
@@ -736,15 +768,17 @@ impl App {
                                     ui.label(format!("{} Angle", i));
                                 });
 
-                                row.col(|ui| {
-                                    ui.label(format!(
-                                        "{:X}",
-                                        (var_data.slot_base_add
-                                            + var_data.offset
-                                            + 4
-                                            + (i as u32 * bytes_amount))
-                                    ));
-                                });
+                                if self.show_addresses {
+                                    row.col(|ui| {
+                                        ui.label(format!(
+                                            "{:X}",
+                                            (var_data.slot_base_add
+                                                + var_data.offset
+                                                + 4
+                                                + (i as u32 * bytes_amount))
+                                        ));
+                                    });
+                                }
                                 row.col(|ui| {
                                     ui.label(format!("{:.1}", figure_info.angle));
                                 });
@@ -759,6 +793,81 @@ impl App {
                     println!("Not an array!");
                 }
             }
+            self.proceed_confirm_reload(ui);
+            self.confirm_close_without_save(ctx, ui);
         });
+    }
+
+    fn confirm_close_without_save(&mut self, ctx: &Context, ui: &mut Ui) {
+        if !self.show_confirm_exit_modal {
+            return;
+        }
+
+        let modal =
+            eframe::egui::Modal::new(eframe::egui::Id::new("Confirm Exit")).show(ui.ctx(), |ui| {
+                ui.set_width(350.0);
+
+                ui.heading("Changes Not Saved, Exit Anyway?");
+
+                ui.separator();
+
+                let close_clicked = egui::Sides::new().show(
+                    ui,
+                    |_ui| {},
+                    |ui| {
+                        if ui.button("Exit").clicked() {
+                            return true;
+                        }
+                        if ui.button("Cancel").clicked() {
+                            // This causes the current modals `should_close` to return true
+                            ui.close();
+                        }
+                        return false;
+                    },
+                );
+                return close_clicked.1;
+            });
+
+        if modal.should_close() {
+            self.show_confirm_exit_modal = false;
+        }
+        if modal.inner {
+            ctx.send_viewport_cmd(eframe::egui::ViewportCommand::Close);
+        };
+    }
+
+    fn proceed_confirm_reload(&mut self, ui: &mut Ui) {
+        if !self.show_confirm_reload_modal {
+            return;
+        }
+
+        let modal = eframe::egui::Modal::new(eframe::egui::Id::new("Confirm Reload")).show(
+            ui.ctx(),
+            |ui| {
+                ui.set_width(350.0);
+
+                ui.heading("Changes Not Saved, Reload Anyway?");
+
+                ui.separator();
+
+                egui::Sides::new().show(
+                    ui,
+                    |_ui| {},
+                    |ui| {
+                        if ui.button("Reload").clicked() {
+                            println!("XD TODO XD");
+                        }
+                        if ui.button("Cancel").clicked() {
+                            // This causes the current modals `should_close` to return true
+                            ui.close();
+                        }
+                    },
+                );
+            },
+        );
+
+        if modal.should_close() {
+            self.show_confirm_reload_modal = false;
+        }
     }
 }

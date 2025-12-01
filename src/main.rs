@@ -2,7 +2,9 @@ mod new_file;
 mod save_data_info;
 mod save_file_parser;
 
-use eframe::egui::{self, CentralPanel, Context, FontId, IconData, TextStyle, TopBottomPanel, Ui};
+use eframe::egui::{
+    self, CentralPanel, Context, FontId, IconData, Key, TextStyle, TopBottomPanel, Ui,
+};
 use egui_extras::{Column, TableBuilder};
 use save_data_info::SaveDataVar;
 use save_file_parser::{get_save_file_variable, read_save_file};
@@ -17,7 +19,8 @@ use crate::{
     },
     save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
-        get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data, write_save_file,
+        get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
+        modify_save_data, write_save_file,
     },
 };
 
@@ -46,6 +49,7 @@ enum SaveFileCurrentView {
 struct App {
     current_view: CurrentMenu,
     single_save_file_view: SaveFileCurrentView,
+    edit_mode: bool,
     show_save_code_variables: bool,
     show_addresses: bool,
     show_simple_data_only: bool,
@@ -54,6 +58,8 @@ struct App {
     edited_save_file: bool,
     show_confirm_exit_modal: bool,
     show_confirm_reload_modal: bool,
+    current_user_input_selected: Option<SaveDataVar>,
+    current_user_input: String,
 }
 
 impl eframe::App for App {
@@ -188,10 +194,10 @@ impl App {
                         match write_save_file(save_data_guard.to_vec()) {
                             Ok(_) => {
                                 println!("Save successful!");
-                            },
+                            }
                             Err(e) => {
                                 println!("ERROR: {}", e);
-                            },
+                            }
                         }
                     }
                     if ui.button("Exit").clicked() {
@@ -370,9 +376,12 @@ impl App {
         if ui.button("See details").clicked() {
             self.save_slot_chosen = save_slot;
             self.current_view = CurrentMenu::FileDetails;
+            self.edit_mode = false;
         }
         if ui.button("Edit").clicked() {
-            println!("TODO!");
+            self.save_slot_chosen = save_slot;
+            self.current_view = CurrentMenu::FileDetails;
+            self.edit_mode = true;
         }
     }
 
@@ -433,7 +442,7 @@ impl App {
             } else {
                 get_all_save_file_vars(self.save_slot_chosen)
             };
-            let save_data_guard = SAVE_DATA.lock().unwrap();
+            let mut save_data_guard = SAVE_DATA.lock().unwrap();
 
             table.body(|mut body| {
                 for var_data in table_vars {
@@ -528,6 +537,140 @@ impl App {
                                         ui.label(value_str);
                                     }
                                 };
+
+                                if self.edit_mode {
+                                    match var_data.int_type {
+                                        SaveDataIntType::Bool => {
+                                            if ui.button("Modify").clicked() {
+                                                if get_int_value_from_save_data(
+                                                    save_data_guard.to_vec(),
+                                                    var_data.slot_base_add,
+                                                    var_data.offset,
+                                                    &var_data.int_type,
+                                                ) > 0
+                                                {
+                                                    modify_save_data(
+                                                        &mut save_data_guard,
+                                                        var_data,
+                                                        0,
+                                                    );
+                                                } else {
+                                                    modify_save_data(
+                                                        &mut save_data_guard,
+                                                        var_data,
+                                                        1,
+                                                    );
+                                                }
+                                                self.edited_save_file = true;
+                                            };
+                                        }
+                                        SaveDataIntType::U32 => {
+                                            if var_data.var
+                                                == self
+                                                    .current_user_input_selected
+                                                    .clone()
+                                                    .unwrap_or_default()
+                                            {
+                                                let prev_input = self.current_user_input.clone();
+                                                let input_response = ui.add(
+                                                    egui::TextEdit::singleline(
+                                                        &mut self.current_user_input,
+                                                    )
+                                                    .hint_text("Press Enter To End"),
+                                                );
+                                                if self.current_user_input == "" {
+                                                    self.current_user_input = "0".into();
+                                                }
+
+                                                let input_to_num: Result<u32, _> =
+                                                    self.current_user_input.parse();
+                                                match input_to_num {
+                                                    Ok(num) => {
+                                                        if input_response.lost_focus()
+                                                            && ui.input(|i| {
+                                                                i.key_pressed(Key::Enter)
+                                                            })
+                                                        {
+                                                            modify_save_data(
+                                                                &mut save_data_guard,
+                                                                var_data,
+                                                                num.into(),
+                                                            );
+                                                            self.current_user_input_selected = None;
+                                                        }
+                                                        self.edited_save_file = true;
+                                                    }
+                                                    Err(_) => {
+                                                        self.current_user_input = prev_input;
+                                                    }
+                                                }
+                                            } else {
+                                                if ui.button("Modify").clicked() {
+                                                    self.current_user_input_selected =
+                                                        Some(var_data.var);
+                                                    self.current_user_input = "".to_string();
+                                                };
+                                            }
+                                        }
+
+                                        SaveDataIntType::I32 => {
+                                            if var_data.var
+                                                == self
+                                                    .current_user_input_selected
+                                                    .clone()
+                                                    .unwrap_or_default()
+                                            {
+                                                let prev_input = self.current_user_input.clone();
+                                                let input_response = ui.add(
+                                                    egui::TextEdit::singleline(
+                                                        &mut self.current_user_input,
+                                                    )
+                                                    .hint_text("Press Enter To End"),
+                                                );
+                                                if self.current_user_input == "" {
+                                                    self.current_user_input = "0".into();
+                                                }
+
+                                                let input_to_num: Result<i32, _> =
+                                                    if self.current_user_input == "-" {
+                                                        Ok(0)
+                                                    } else {
+                                                        self.current_user_input.parse()
+                                                    };
+                                                match input_to_num {
+                                                    Ok(num) => {
+                                                        if input_response.lost_focus()
+                                                            && ui.input(|i| {
+                                                                i.key_pressed(Key::Enter)
+                                                            })
+                                                        {
+                                                            modify_save_data(
+                                                                &mut save_data_guard,
+                                                                var_data,
+                                                                num.into(),
+                                                            );
+                                                            self.current_user_input_selected = None;
+                                                        }
+                                                        self.edited_save_file = true;
+                                                    }
+                                                    Err(_) => {
+                                                        self.current_user_input = prev_input;
+                                                    }
+                                                }
+                                            } else {
+                                                if ui.button("Modify").clicked() {
+                                                    self.current_user_input_selected =
+                                                        Some(var_data.var);
+                                                    self.current_user_input = "".to_string();
+                                                };
+                                            }
+                                        }
+                                        SaveDataIntType::Arrayi32(_)
+                                        | SaveDataIntType::ArrayText(_)
+                                        | SaveDataIntType::Arrayu8(_)
+                                        | SaveDataIntType::SFigureDisplayInfoArray(_) => {}
+                                    }
+                                }
                             }
                         });
                     });
@@ -680,64 +823,75 @@ impl App {
                                         ));
                                     });
                                 }
-                                row.col(|ui| match var_data.var {
-                                    SaveDataVar::TimeTrialList | SaveDataVar::TimeTrialCoopList => {
-                                        let seconds_total = var / 100;
-                                        let ms = var - seconds_total * 100;
-                                        let minutes = seconds_total / 60;
-                                        let seconds = seconds_total % 60;
+                                row.col(|ui| {
+                                    
+                                    match var_data.var {
+                                        SaveDataVar::TimeTrialList
+                                        | SaveDataVar::TimeTrialCoopList => {
+                                            let seconds_total = var / 100;
+                                            let ms = var - seconds_total * 100;
+                                            let minutes = seconds_total / 60;
+                                            let seconds = seconds_total % 60;
 
-                                        let ms_str: String;
-                                        if ms < 10 {
-                                            ms_str = format!("0{}", ms);
-                                        } else {
-                                            ms_str = ms.to_string();
+                                            let ms_str: String;
+                                            if ms < 10 {
+                                                ms_str = format!("0{}", ms);
+                                            } else {
+                                                ms_str = ms.to_string();
+                                            }
+
+                                            let seconds_str: String;
+                                            if seconds < 10 {
+                                                seconds_str = format!("0{}", seconds);
+                                            } else {
+                                                seconds_str = seconds.to_string();
+                                            }
+
+                                            ui.label(format!(
+                                                "{}:{}.{}",
+                                                minutes, seconds_str, ms_str
+                                            ));
+                                        }
+                                        SaveDataVar::StageFlagList | SaveDataVar::MazeFlagList => {
+                                            match var {
+                                                0 => ui.label(format!("0 Locked")),
+                                                1 => ui.label(format!("1 Unlocked")),
+                                                2 => ui.label(format!("2 Entered")),
+                                                3 => ui.label(format!("3 Complete")),
+                                                _ => ui.label(var.to_string()),
+                                            };
+                                        }
+                                        SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
+                                            let is_controller =
+                                                array_index_to_input_type(i).contains("Controller");
+                                            if is_controller {
+                                                ui.label(int_to_controller_btn(*var));
+                                            } else {
+                                                ui.label(int_to_key(*var));
+                                            }
                                         }
 
-                                        let seconds_str: String;
-                                        if seconds < 10 {
-                                            seconds_str = format!("0{}", seconds);
-                                        } else {
-                                            seconds_str = seconds.to_string();
+                                        SaveDataVar::StageCherryFlag
+                                        | SaveDataVar::StageStrawberryFlag
+                                        | SaveDataVar::StageOrangeFlag
+                                        | SaveDataVar::StageAppleFlag
+                                        | SaveDataVar::StageMelonFlag => {
+                                            ui.label(format!("{} ({:b})", var, var));
                                         }
-
-                                        ui.label(format!("{}:{}.{}", minutes, seconds_str, ms_str));
-                                    }
-                                    SaveDataVar::StageFlagList | SaveDataVar::MazeFlagList => {
-                                        match var {
-                                            0 => ui.label(format!("0 Locked")),
-                                            1 => ui.label(format!("1 Unlocked")),
-                                            2 => ui.label(format!("2 Entered")),
-                                            3 => ui.label(format!("3 Complete")),
-                                            _ => ui.label(var.to_string()),
-                                        };
-                                    }
-                                    SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
-                                        let is_controller =
-                                            array_index_to_input_type(i).contains("Controller");
-                                        if is_controller {
-                                            ui.label(int_to_controller_btn(*var));
-                                        } else {
-                                            ui.label(int_to_key(*var));
+                                        SaveDataVar::StageMazeFlagList => {
+                                            match var {
+                                                0 => ui.label(format!("0 Locked")),
+                                                1 => ui.label(format!("1 Unlocked")),
+                                                _ => ui.label(var.to_string()),
+                                            };
+                                        }
+                                        _ => {
+                                            ui.label(var.to_string());
                                         }
                                     }
 
-                                    SaveDataVar::StageCherryFlag
-                                    | SaveDataVar::StageStrawberryFlag
-                                    | SaveDataVar::StageOrangeFlag
-                                    | SaveDataVar::StageAppleFlag
-                                    | SaveDataVar::StageMelonFlag => {
-                                        ui.label(format!("{} ({:b})", var, var));
-                                    }
-                                    SaveDataVar::StageMazeFlagList => {
-                                        match var {
-                                            0 => ui.label(format!("0 Locked")),
-                                            1 => ui.label(format!("1 Unlocked")),
-                                            _ => ui.label(var.to_string()),
-                                        };
-                                    }
-                                    _ => {
-                                        ui.label(var.to_string());
+                                    if self.edit_mode {
+                                        
                                     }
                                 });
                             });

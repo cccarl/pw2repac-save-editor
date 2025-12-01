@@ -1,7 +1,8 @@
 use enum_iterator::Sequence;
 
-#[derive(Debug, PartialEq, Sequence, Clone)]
+#[derive(Debug, PartialEq, Sequence, Clone, Default)]
 pub enum SaveDataVar {
+    #[default]
     FileExists,
     //m_bNameList, whatever this is
     SaveDate,
@@ -383,8 +384,9 @@ pub fn array_index_to_input_type(i: usize) -> String {
         503 => "Controller Dolphin Kick",
         509 => "Controller Float",
         519 => "Controller Dive",
-        _ => return i.to_string()
-    }.to_string()
+        _ => return i.to_string(),
+    }
+    .to_string()
 }
 
 pub fn int_to_key(key: i64) -> String {
@@ -404,7 +406,7 @@ pub fn int_to_key(key: i64) -> String {
         55 => "Ctrl",
         1000 => "Left Click",
         1001 => "Right Click",
-        _ => return key.to_string()
+        _ => return key.to_string(),
     };
 
     format!("{key} {key_str}")
@@ -422,7 +424,7 @@ pub fn int_to_controller_btn(btn: i64) -> String {
         15 => "ZR",
         8 => "Left Stick Click",
         9 => "Right Stick Click",
-        _ => return btn.to_string()
+        _ => return btn.to_string(),
     };
 
     format!("{btn} {btn_str}")

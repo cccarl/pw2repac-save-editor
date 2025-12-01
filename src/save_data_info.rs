@@ -123,7 +123,7 @@ pub enum SaveDataVar {
     JukeBoxModeCollab,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum SaveDataIntType {
     Bool,
     U32,

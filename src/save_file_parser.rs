@@ -214,10 +214,16 @@ pub fn get_basic_save_file_vars(slot: u8) -> Vec<SaveFileData> {
     basic_vars
 }
 
-pub fn modify_save_data(save_data: &mut Vec<u8>, var_data: SaveFileData, value_to_write: i64) {
-    let pos_to_write = (var_data.slot_base_add + var_data.offset) as usize;
+pub fn modify_save_data(
+    save_data: &mut Vec<u8>,
+    slot_base_add: u32,
+    offset: u32,
+    int_type: SaveDataIntType,
+    value_to_write: i64,
+) {
+    let pos_to_write = (slot_base_add + offset) as usize;
 
-    match var_data.int_type {
+    match int_type {
         SaveDataIntType::Bool => {
             let value_to_bool: u8 = if value_to_write > 0 { 1 } else { 0 };
             save_data[pos_to_write] = value_to_bool;
@@ -228,17 +234,35 @@ pub fn modify_save_data(save_data: &mut Vec<u8>, var_data: SaveFileData, value_t
                 save_data[pos_to_write + i] = *byte;
             }
         }
-        SaveDataIntType::I32 => {
+        SaveDataIntType::I32
+        | SaveDataIntType::Arrayi32(_)
+        | SaveDataIntType::SFigureDisplayInfoArray(_) => {
             let value_to_bytes: [u8; 4] = (value_to_write as i32).to_le_bytes();
             for (i, byte) in value_to_bytes.iter().enumerate() {
                 save_data[pos_to_write + i] = *byte;
             }
-        },
-        SaveDataIntType::Arrayi32(_) => todo!(),
-        SaveDataIntType::Arrayu8(_) => todo!(),
-        SaveDataIntType::ArrayText(_) => todo!(),
-        SaveDataIntType::SFigureDisplayInfoArray(_) => todo!(),
+        }
+        SaveDataIntType::Arrayu8(_) => {
+            let value_to_u8 = value_to_write as u8;
+            save_data[pos_to_write] = value_to_u8;
+        }
+        SaveDataIntType::ArrayText(_) => {
+            // meh not worth it
+        }
     };
+}
+
+pub fn modify_save_data_float(
+    save_data: &mut Vec<u8>,
+    slot_base_add: u32,
+    offset: u32,
+    value_to_write: f32,
+) {
+    let pos_to_write = (slot_base_add + offset) as usize;
+    let value_to_bytes: [u8; 4] = (value_to_write as f32).to_le_bytes();
+    for (i, byte) in value_to_bytes.iter().enumerate() {
+        save_data[pos_to_write + i] = *byte;
+    }
 }
 
 pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {

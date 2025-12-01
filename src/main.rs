@@ -20,7 +20,7 @@ use crate::{
     save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
         get_int_array_from_save_data, get_int_value_from_save_data, get_text_value_from_save_data,
-        modify_save_data, write_save_file,
+        modify_save_data, modify_save_data_float, write_save_file,
     },
 };
 
@@ -59,6 +59,7 @@ struct App {
     show_confirm_exit_modal: bool,
     show_confirm_reload_modal: bool,
     current_user_input_selected: Option<SaveDataVar>,
+    current_user_input_array_i_selected: Option<usize>,
     current_user_input: String,
 }
 
@@ -83,7 +84,6 @@ impl eframe::App for App {
 }
 
 fn main() -> Result<(), eframe::Error> {
-    println!("Hello, world!");
     load_save_file();
 
     let icon = load_icon();
@@ -104,6 +104,7 @@ fn main() -> Result<(), eframe::Error> {
         Box::new(|_ctx| {
             Ok(Box::<App>::new(App {
                 show_addresses: true,
+                show_simple_data_only: true,
                 ..Default::default()
             }))
         }),
@@ -518,6 +519,7 @@ impl App {
                                     self.scroll_to_top = true;
                                     self.single_save_file_view =
                                         SaveFileCurrentView::SingleArray(var_data);
+                                    self.current_user_input_selected = None;
                                 }
                             } else {
                                 match var_data.var {
@@ -551,13 +553,17 @@ impl App {
                                                 {
                                                     modify_save_data(
                                                         &mut save_data_guard,
-                                                        var_data,
+                                                        var_data.slot_base_add,
+                                                        var_data.offset,
+                                                        var_data.int_type,
                                                         0,
                                                     );
                                                 } else {
                                                     modify_save_data(
                                                         &mut save_data_guard,
-                                                        var_data,
+                                                        var_data.slot_base_add,
+                                                        var_data.offset,
+                                                        var_data.int_type,
                                                         1,
                                                     );
                                                 }
@@ -565,11 +571,12 @@ impl App {
                                             };
                                         }
                                         SaveDataIntType::U32 => {
-                                            if var_data.var
-                                                == self
-                                                    .current_user_input_selected
-                                                    .clone()
-                                                    .unwrap_or_default()
+                                            if self.current_user_input_selected.is_some()
+                                                && var_data.var
+                                                    == self
+                                                        .current_user_input_selected
+                                                        .clone()
+                                                        .unwrap_or_default()
                                             {
                                                 let prev_input = self.current_user_input.clone();
                                                 let input_response = ui.add(
@@ -593,7 +600,9 @@ impl App {
                                                         {
                                                             modify_save_data(
                                                                 &mut save_data_guard,
-                                                                var_data,
+                                                                var_data.slot_base_add,
+                                                                var_data.offset,
+                                                                var_data.int_type,
                                                                 num.into(),
                                                             );
                                                             self.current_user_input_selected = None;
@@ -614,11 +623,12 @@ impl App {
                                         }
 
                                         SaveDataIntType::I32 => {
-                                            if var_data.var
-                                                == self
-                                                    .current_user_input_selected
-                                                    .clone()
-                                                    .unwrap_or_default()
+                                            if self.current_user_input_selected.is_some()
+                                                && var_data.var
+                                                    == self
+                                                        .current_user_input_selected
+                                                        .clone()
+                                                        .unwrap_or_default()
                                             {
                                                 let prev_input = self.current_user_input.clone();
                                                 let input_response = ui.add(
@@ -646,7 +656,9 @@ impl App {
                                                         {
                                                             modify_save_data(
                                                                 &mut save_data_guard,
-                                                                var_data,
+                                                                var_data.slot_base_add,
+                                                                var_data.offset,
+                                                                var_data.int_type,
                                                                 num.into(),
                                                             );
                                                             self.current_user_input_selected = None;
@@ -689,6 +701,7 @@ impl App {
             ui.horizontal(|ui| {
                 if ui.button("Go Back To All Data").clicked() {
                     self.single_save_file_view = SaveFileCurrentView::AllVars;
+                    self.current_user_input_array_i_selected = None;
                 };
             });
 
@@ -733,7 +746,7 @@ impl App {
                     });
                 });
 
-            let save_data_guard = SAVE_DATA.lock().unwrap();
+            let mut save_data_guard = SAVE_DATA.lock().unwrap();
 
             match var_data.int_type {
                 SaveDataIntType::Arrayi32(_) | SaveDataIntType::Arrayu8(_) => {
@@ -824,7 +837,6 @@ impl App {
                                     });
                                 }
                                 row.col(|ui| {
-                                    
                                     match var_data.var {
                                         SaveDataVar::TimeTrialList
                                         | SaveDataVar::TimeTrialCoopList => {
@@ -891,7 +903,125 @@ impl App {
                                     }
 
                                     if self.edit_mode {
-                                        
+                                        match var_data.int_type {
+                                            SaveDataIntType::Arrayi32(_) => {
+                                                if self.current_user_input_array_i_selected.is_some() && i == self
+                                                    .current_user_input_array_i_selected
+                                                    .unwrap_or_default()
+                                                {
+                                                    let prev_input =
+                                                        self.current_user_input.clone();
+                                                    let input_response = ui.add(
+                                                        egui::TextEdit::singleline(
+                                                            &mut self.current_user_input,
+                                                        )
+                                                        .hint_text("Press Enter To End"),
+                                                    );
+                                                    if self.current_user_input == "" {
+                                                        self.current_user_input = "0".into();
+                                                    }
+
+                                                    let input_to_num: Result<i32, _> =
+                                                        if self.current_user_input == "-" {
+                                                            Ok(0)
+                                                        } else {
+                                                            self.current_user_input.parse()
+                                                        };
+                                                    match input_to_num {
+                                                        Ok(num) => {
+                                                            if input_response.lost_focus()
+                                                                && ui.input(|i| {
+                                                                    i.key_pressed(Key::Enter)
+                                                                })
+                                                            {
+                                                                modify_save_data(
+                                                                    &mut save_data_guard,
+                                                                    var_data.slot_base_add,
+                                                                    var_data.offset
+                                                                        + (i as u32 * 4),
+                                                                    var_data.int_type,
+                                                                    num.into(),
+                                                                );
+                                                                self.current_user_input_array_i_selected =
+                                                                    None;
+                                                            }
+                                                            self.edited_save_file = true;
+                                                        }
+                                                        Err(_) => {
+                                                            self.current_user_input = prev_input;
+                                                        }
+                                                    }
+                                                } else {
+                                                    if ui.button("Modify").clicked() {
+                                                        self.current_user_input_array_i_selected =
+                                                            Some(i);
+                                                        self.current_user_input = "".to_string();
+                                                    };
+                                                }
+                                            }
+                                            SaveDataIntType::Arrayu8(_) => {
+                                                if self.current_user_input_array_i_selected.is_some() && i == self
+                                                    .current_user_input_array_i_selected
+                                                    .unwrap_or_default()
+                                                {
+                                                    let prev_input =
+                                                        self.current_user_input.clone();
+                                                    let input_response = ui.add(
+                                                        egui::TextEdit::singleline(
+                                                            &mut self.current_user_input,
+                                                        )
+                                                        .hint_text("Press Enter To End"),
+                                                    );
+                                                    if self.current_user_input == "" {
+                                                        self.current_user_input = "0".into();
+                                                    }
+
+                                                    let input_to_num: Result<u8, _> =
+                                                        if self.current_user_input == "-" {
+                                                            Ok(0)
+                                                        } else {
+                                                            self.current_user_input.parse()
+                                                        };
+                                                    match input_to_num {
+                                                        Ok(num) => {
+                                                            if input_response.lost_focus()
+                                                                && ui.input(|i| {
+                                                                    i.key_pressed(Key::Enter)
+                                                                })
+                                                            {
+                                                                modify_save_data(
+                                                                    &mut save_data_guard,
+                                                                    var_data.slot_base_add,
+                                                                    var_data.offset
+                                                                        + (i as u32),
+                                                                    var_data.int_type,
+                                                                    num.into(),
+                                                                );
+                                                                self.current_user_input_array_i_selected =
+                                                                    None;
+                                                            }
+                                                            self.edited_save_file = true;
+                                                        }
+                                                        Err(_) => {
+                                                            self.current_user_input = prev_input;
+                                                        }
+                                                    }
+                                                } else {
+                                                    if ui.button("Modify").clicked() {
+                                                        self.current_user_input_array_i_selected =
+                                                            Some(i);
+                                                        self.current_user_input = "".to_string();
+                                                    };
+                                                }
+                                            },
+                                            SaveDataIntType::ArrayText(_) => {
+                                                // ok this doesn't seem worth it, it's pointless text
+                                            },
+                                            SaveDataIntType::Bool
+                                            | SaveDataIntType::U32
+                                            | SaveDataIntType::I32
+                                            | SaveDataIntType::SFigureDisplayInfoArray(_) => {}
+                                        }
                                     }
                                 });
                             });
@@ -928,9 +1058,64 @@ impl App {
                                 }
                                 row.col(|ui| {
                                     ui.label(figure_info.figure_id.to_string());
+
+                                    if self.edit_mode {
+                                        if self.current_user_input_array_i_selected.is_some() && i * 2 == self
+                                            .current_user_input_array_i_selected
+                                            .unwrap_or_default()
+                                        {
+                                            let prev_input =
+                                                self.current_user_input.clone();
+                                            let input_response = ui.add(
+                                                egui::TextEdit::singleline(
+                                                    &mut self.current_user_input,
+                                                )
+                                                .hint_text("Press Enter To End"),
+                                            );
+                                            if self.current_user_input == "" {
+                                                self.current_user_input = "0".into();
+                                            }
+
+                                            let input_to_num: Result<i32, _> =
+                                                if self.current_user_input == "-" {
+                                                    Ok(0)
+                                                } else {
+                                                    self.current_user_input.parse()
+                                                };
+                                            match input_to_num {
+                                                Ok(num) => {
+                                                    if input_response.lost_focus()
+                                                        && ui.input(|i| {
+                                                            i.key_pressed(Key::Enter)
+                                                        })
+                                                    {
+                                                        modify_save_data(
+                                                            &mut save_data_guard,
+                                                            var_data.slot_base_add,
+                                                            var_data.offset
+                                                                + (i as u32 * bytes_amount),
+                                                            var_data.int_type,
+                                                            num.into(),
+                                                        );
+                                                        self.current_user_input_array_i_selected =
+                                                            None;
+                                                    }
+                                                    self.edited_save_file = true;
+                                                }
+                                                Err(_) => {
+                                                    self.current_user_input = prev_input;
+                                                }
+                                            }
+                                        } else {
+                                            if ui.button("Modify").clicked() {
+                                                self.current_user_input_array_i_selected =
+                                                    Some(i * 2);
+                                                self.current_user_input = "".to_string();
+                                            };
+                                        }
+                                    }
                                 });
                             });
-
                             body.row(30.0, |mut row| {
                                 row.col(|ui| {
                                     ui.label(format!("{} Angle", i));
@@ -949,6 +1134,61 @@ impl App {
                                 }
                                 row.col(|ui| {
                                     ui.label(format!("{:.1}", figure_info.angle));
+
+                                    if self.edit_mode {
+                                        if self.current_user_input_array_i_selected.is_some() && (i * 2 + 1) == self
+                                            .current_user_input_array_i_selected
+                                            .unwrap_or_default()
+                                        {
+                                            let prev_input =
+                                                self.current_user_input.clone();
+                                            let input_response = ui.add(
+                                                egui::TextEdit::singleline(
+                                                    &mut self.current_user_input,
+                                                )
+                                                .hint_text("Press Enter To End"),
+                                            );
+                                            if self.current_user_input == "" {
+                                                self.current_user_input = "0".into();
+                                            }
+
+                                            let input_to_num: Result<f32, _> =
+                                                if self.current_user_input == "-" {
+                                                    Ok(0.)
+                                                } else {
+                                                    self.current_user_input.parse()
+                                                };
+                                            match input_to_num {
+                                                Ok(num) => {
+                                                    if input_response.lost_focus()
+                                                        && ui.input(|i| {
+                                                            i.key_pressed(Key::Enter)
+                                                        })
+                                                    {
+                                                        modify_save_data_float(
+                                                            &mut save_data_guard,
+                                                            var_data.slot_base_add,
+                                                            var_data.offset
+                                                                + (i as u32 * bytes_amount + 4),
+                                                            num,
+                                                        );
+                                                        self.current_user_input_array_i_selected =
+                                                            None;
+                                                    }
+                                                    self.edited_save_file = true;
+                                                }
+                                                Err(_) => {
+                                                    self.current_user_input = prev_input;
+                                                }
+                                            }
+                                        } else {
+                                            if ui.button("Modify").clicked() {
+                                                self.current_user_input_array_i_selected =
+                                                    Some(i * 2 + 1);
+                                                self.current_user_input = "".to_string();
+                                            };
+                                        }
+                                    }
                                 });
                             });
                         }

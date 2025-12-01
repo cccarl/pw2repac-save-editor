@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 mod new_file;
 mod save_data_info;
 mod save_file_parser;

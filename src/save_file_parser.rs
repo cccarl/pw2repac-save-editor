@@ -111,7 +111,10 @@ pub fn get_int_array_from_save_data(
             }
             final_vec
         }
-        SaveDataIntType::ArrayText(_) => todo!(),
+        SaveDataIntType::ArrayText(_) => {
+            println!("Text not supported!");
+            vec![]
+        }
         SaveDataIntType::Bool
         | SaveDataIntType::U32
         | SaveDataIntType::I32

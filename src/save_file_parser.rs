@@ -1,7 +1,10 @@
 use enum_iterator::all;
-use std::{env, fs, str::from_utf8};
+use std::{env, fs, path::Path, str::from_utf8};
 
-use crate::save_data_info::{SaveDataIntType, SaveDataVar, SaveFileData, get_save_slot_base_add};
+use crate::{
+    EXPECTED_SAVE_FILE_SIZE,
+    save_data_info::{SaveDataIntType, SaveDataVar, SaveFileData, get_save_slot_base_add},
+};
 
 const LEVELS_COUNT: u32 = 40;
 const MAZES_COUNT: u32 = 15;
@@ -14,9 +17,40 @@ pub struct SFigureDisplayInfo {
 fn get_file_path() -> Result<String, String> {
     let pac_save_path_res = env::var("LOCALAPPDATA");
     match pac_save_path_res {
-        Ok(mut local_app_data_path) => {
-            local_app_data_path.insert_str(local_app_data_path.len(), "\\BANDAI NAMCO Entertainment\\PAC-MAN WORLD2 Re-Pac\\Saved\\SaveGames\\181732721\\DAT00000.dat");
-            Ok(local_app_data_path)
+        Ok(local_app_data_path_str) => {
+            let local_data_path = Path::new(&local_app_data_path_str);
+            let save_games_path = local_data_path
+                .join("BANDAI NAMCO Entertainment")
+                .join("PAC-MAN WORLD2 Re-Pac")
+                .join("Saved")
+                .join("SaveGames");
+
+            println!("Reading path: {}", save_games_path.to_str().unwrap_or_default());
+            let mut save_file_path = String::default();
+            match fs::read_dir(save_games_path) {
+                Ok(entries) => {
+                    // just assume there's 1 folder so "last" element will be in the path
+                    for entry_res in entries {
+                        match entry_res {
+                            Ok(entry) => {
+                                save_file_path = entry
+                                    .path()
+                                    .join("DAT00000.dat")
+                                    .to_str()
+                                    .unwrap_or_default()
+                                    .to_string();
+                            }
+                            Err(e) => eprintln!("Error reading save directory entry: {}", e),
+                        }
+                    }
+                }
+                Err(e) => {
+                    return Err(format!("Error when reading SaveGames path: {}", e));
+                },
+            }
+
+            println!("Final Path is: {}", save_file_path);
+            Ok(save_file_path)
         }
         Err(var_err) => {
             return Err(format!("Error in local data path value: {}", var_err));
@@ -61,6 +95,9 @@ pub fn get_int_value_from_save_data(
     offset: u32,
     int_type: &SaveDataIntType,
 ) -> i64 {
+    if save_file_raw.len() < EXPECTED_SAVE_FILE_SIZE {
+        return 0;
+    }
     match int_type {
         SaveDataIntType::Bool => save_file_raw[slot_base as usize + offset as usize].into(),
         SaveDataIntType::U32 => {
@@ -91,6 +128,9 @@ pub fn get_int_array_from_save_data(
     offset: u32,
     int_type: &SaveDataIntType,
 ) -> Vec<i64> {
+    if save_file_raw.len() < EXPECTED_SAVE_FILE_SIZE {
+        return vec![];
+    }
     match int_type {
         SaveDataIntType::Arrayi32(len) => {
             let mut final_vec: Vec<i64> = vec![];

@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod new_file;
 mod save_data_info;
 mod save_file_parser;
@@ -25,11 +25,11 @@ use crate::{
     },
 };
 
-//const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
+pub const EXPECTED_SAVE_FILE_SIZE: usize = 176_608;
 static SAVE_DATA: LazyLock<Mutex<Vec<u8>>> = LazyLock::new(|| {
     // this closure runs only once, on the first access.
     // it initializes the data inside the Mutex.
-    Mutex::new(Vec::new())
+    Mutex::new(vec![0; EXPECTED_SAVE_FILE_SIZE])
 });
 
 #[derive(Default)]
@@ -135,7 +135,7 @@ fn load_icon() -> IconData {
         .to_rgba8();
     let width = image.width();
     let height = image.height();
-    let rgba = image.into_raw(); // Vec<u8>
+    let rgba = image.into_raw();
 
     IconData {
         rgba,
@@ -384,6 +384,16 @@ impl App {
             self.save_slot_chosen = save_slot;
             self.current_view = CurrentMenu::FileDetails;
             self.edit_mode = true;
+        }
+        if ui.button("Delete").clicked() {
+            let file_exists_data = get_save_file_variable(SaveDataVar::FileExists, save_slot);
+            modify_save_data(
+                &mut save_data_guard,
+                file_exists_data.slot_base_add,
+                file_exists_data.offset,
+                file_exists_data.int_type,
+                0
+            );
         }
     }
 

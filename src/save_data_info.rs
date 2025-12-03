@@ -1,4 +1,5 @@
 use enum_iterator::Sequence;
+use image::codecs::qoi;
 
 #[derive(Debug, PartialEq, Sequence, Clone, Default)]
 pub enum SaveDataVar {
@@ -162,25 +163,25 @@ pub fn get_save_slot_base_add(slot: u8) -> u32 {
 }
 
 pub fn bgm_music_str_to_name(music: i32) -> String {
-    match music {
-        -1 => "-1 Disabled (See DLC/No DLC Music)",
-        0 => "00 Opening",
-        1 => "01 Prologue",
-        2 => "02 Pac-Village",
-        3 => "03 The Bear Basics",
-        4 => "04 Canyon Chaos",
-        5 => "05 Pac-Dot Pong",
-        6 => "06 Clyde's Frog",
-        7 => "07 B-Doing Woods",
-        8 => "08 Treewood Forest",
-        9 => "09 Butane Pain",
-        10 => "0A Inky's Whimsy",
-        11 => "0B Pac-Ranger's Theme",
-        12 => "0C Ice River Run",
-        13 => "0D Avalanche Alley",
-        14 => "0E Blade Mountain",
-        15 => "0F Pinky's Revenge",
-        16 => "10 Into the Volcano!",
+    let music_name = match music {
+        -1 => "(Disabled)",
+        0 => "Opening",
+        1 => "Prologue",
+        2 => "Pac-Village",
+        3 => "The Bear Basics",
+        4 => "Canyon Chaos",
+        5 => "Pac-Dot Pong",
+        6 => "Clyde's Frog",
+        7 => "B-Doing Woods",
+        8 => "Treewood Forest",
+        9 => "Butane Pain",
+        10 => "Inky's Whimsy",
+        11 => "Pac-Ranger's Theme",
+        12 => "Ice River Run",
+        13 => "Avalanche Alley",
+        14 => "Blade Mountain",
+        15 => "Pinky's Revenge",
+        16 => "Into the Volcano!",
         17 => "Volcanic Panic",
         18 => "Magma Opus",
         19 => "Blinky in the Caldera",
@@ -228,11 +229,18 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
         71 => "PAC-MANIAC45",
         72 => "Start Music",
         73 => "Coffee Break Music",
-        // TODO i haven't unlocked 7 songs lol
+        75 => "Block Town Music (Japan Version)",
+        76 => "Pacman's Park (Japan Version)",
+        77 => "Sandbox Land",
+        78 => "Jungly Steps",
+        79 => "Menu Selection",
+        80 => "Puzzle Fever",
+        81 => "The Can-Can",
         82 => "Blinky in the Caldera (Phase 1)",
         83 => "Blinky in the Caldera (Phase 2)",
         84 => "Burning Hot Beats (Phase 1)",
         85 => "Burning Hot Beats (Phase 2)",
+        // to use in m_iJukeBoxBGMKindCollabo
         86 => "Supersonic Tricky Railroad",
         87 => "South Pac-Island",
         88 => "GREEN HILL: ACT1",
@@ -241,9 +249,11 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
         94 => "Results",
         95 => "Results (S-Rank)",
         96 => "Act Clear",
-        _ => return format!("Unknown: {}", music),
+        _ => "(Unknown)",
     }
-    .to_string()
+    .to_string();
+
+    format!("{} {}", music, music_name)
 }
 
 pub fn costume_int_to_name(costume_id: i32) -> String {

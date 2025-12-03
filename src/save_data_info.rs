@@ -1,5 +1,4 @@
 use enum_iterator::Sequence;
-use image::codecs::qoi;
 
 #[derive(Debug, PartialEq, Sequence, Clone, Default)]
 pub enum SaveDataVar {
@@ -45,7 +44,7 @@ pub enum SaveDataVar {
     JukeBoxFlag,
     JukeBoxUnlockFlagList,
     MedalNum,
-    //CapsuleFlag // TODO exp with this later, too many of these
+    CapsuleFlag,
     StageCherryFlag,
     StageStrawberryFlag,
     StageOrangeFlag,
@@ -77,7 +76,8 @@ pub enum SaveDataVar {
     CameraYAutoRotateFlag,
     SwimControlY,
 
-    //MissionProgress, // TODO what is this?
+    MissionFlag,
+    //MissionProgress, // TODO can't figure out what this is, it's always full of 0
     MissionRewardFlag,
     PlayerSkinId,
     // array in the decomp but makes sense to treat these and 2 separate i32s
@@ -100,8 +100,8 @@ pub enum SaveDataVar {
     PacAttackLevelNum,
     PacAttackHighScore,
     HelpFlag,
-    //DroneSkinFlag // TODO
-    //DroneSkinID // TODO
+    DroneSkinFlag,
+    DroneSkinID,
     DroneReticleSpeed,
     DroneReticleColor,
     DroneVacuumRangeFlag,
@@ -257,43 +257,46 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
 }
 
 pub fn costume_int_to_name(costume_id: i32) -> String {
-    match costume_id {
-        0x00 => "00 No Costume",
-        0x01 => "01 Green Hunter",
-        0x02 => "02 Brown Hunter",
-        0x03 => "03 Blue Hunter",
-        0x04 => "04 Blue Street",
-        0x05 => "05 Red Street",
-        0x06 => "06 Pink Street",
-        0x07 => "07 Brown Cowboy",
-        0x08 => "08 Red Cowboy",
-        0x09 => "09 Pink Cowboy",
-        0x0a => "0A Brown Ushanka",
-        0x0b => "0B Red Ushanka",
-        0x0c => "0C Blue Ushanka",
-        0x0d => "0D White Explorer",
-        0x0e => "0E Green Explorer",
-        0x0f => "0F Pink Explorer",
-        0x10 => "10 Blue Diver",
-        0x11 => "11 Green Diver",
-        0x12 => "12 Pink Diver",
-        0x13 => "13 Blinky",
-        0x14 => "14 Inky",
-        0x15 => "15 Clyde",
-        0x16 => "16 Pinky",
-        0x17 => "17 Black Magician",
-        0x18 => "18 Purple Magician",
-        0x19 => "19 Green Magician",
-        0x1a => "1A Pac-Knight",
-        0x1b => "1B Toc-Man",
-        0x1c => "1C Pac-Wizard",
-        0x1d => "1D Orson",
-        0x1e => "1E Pac-Land",
-        0x1f => "1F Spooky",
-        0x20 => "20 Sonic",
-        _ => return format!("Unknown: {}", costume_id),
+    let costume_name = match costume_id {
+        -1 => "(Disabled)",
+        0x00 => "No Costume",
+        0x01 => "Green Hunter",
+        0x02 => "Brown Hunter",
+        0x03 => "Blue Hunter",
+        0x04 => "Blue Street",
+        0x05 => "Red Street",
+        0x06 => "Pink Street",
+        0x07 => "Brown Cowboy",
+        0x08 => "Red Cowboy",
+        0x09 => "Pink Cowboy",
+        0x0a => "Brown Ushanka",
+        0x0b => "Red Ushanka",
+        0x0c => "Blue Ushanka",
+        0x0d => "White Explorer",
+        0x0e => "Green Explorer",
+        0x0f => "Pink Explorer",
+        0x10 => "Blue Diver",
+        0x11 => "Green Diver",
+        0x12 => "Pink Diver",
+        0x13 => "Blinky",
+        0x14 => "Inky",
+        0x15 => "Clyde",
+        0x16 => "Pinky",
+        0x17 => "Black Magician",
+        0x18 => "Purple Magician",
+        0x19 => "Green Magician",
+        0x1a => "Pac-Knight",
+        0x1b => "Toc-Man",
+        0x1c => "Pac-Wizard",
+        0x1d => "Orson",
+        0x1e => "Pac-Land",
+        0x1f => "Spooky",
+        0x20 => "Sonic",
+        _ => "(Unknown)",
     }
-    .to_string()
+    .to_string();
+
+    format!("{} {}", costume_id, costume_name)
 }
 
 pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
@@ -341,6 +344,53 @@ pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
         38 => "Rolling Around On the Island",
         39 => "Supersonic Tricky Railroad",
         40 => "300 IQ Evil Genius",
+        _ => "Unknown",
+    }
+    .to_string()
+}
+pub fn int_to_mission_level(id: usize) -> String {
+    match id {
+        0 => "Pac-Village",
+        1 | 2 | 3 => "The Bear Basics",
+        4 | 5 | 6 => "Canyon Chaos",
+        7 | 8 | 9 => "Pac-Dot Pond",
+        10 | 11 => "Clyde's Frog",
+        12 | 13 | 14 => "B-Doing Woods",
+        15 | 16 | 17 => "Treewood Forest",
+        18 | 19 | 20 => "Butane Pain",
+        21 | 22 => "Inky's Whimsy",
+        23 | 24 | 25 => "Ice River Run",
+        26 | 27 | 28 => "Avalanche Alley",
+        29 | 30 | 31 => "Blade Mountain",
+        32 | 33 => "Pinky's Revenge",
+        34 | 35 | 36 => "Into The Volcano!",
+        37 | 38 | 39 => "Volcanic Panic",
+        40 | 41 | 42 => "Magma Opus",
+        43 | 44 => "Blinky in the Caldera",
+        45 | 46 | 47 => "Scuba Duba",
+        48 | 49 | 50 => "Shark Attack",
+        51 | 52 | 53 => "Yellow Pac-Marine",
+        54 | 55 => "Whale on a Sub",
+        56 | 57 | 58 => "Haunted Boardwalk",
+        59 | 60 | 61 => "Night Crawling",
+        62 | 63 | 64 => "Ghost Bayou",
+        65 | 66 => "Spooky",
+        67 | 68 | 69 => "Deadly Poisonous Meadows",
+        70 | 71 => "A Long Poisonous Tongue",
+        72 | 73 | 74 => "Harsh Harsh Winds",
+        75 | 76 => "Hunter Of Darkness",
+        77 | 78 | 79 => "Pro Thunder Skater",
+        80 | 81 => "Boom! Boom! Clap!",
+        82 | 83 | 84 => "Hot! Fire Trouble",
+        85 | 86 => "Burning Hot Beats",
+        87 | 88 | 89 => "Sharks Everywhere",
+        90 | 91 => "Pac-Marine Battle!",
+        92 | 93 | 94 => "Clumsy Bayou",
+        95 | 96 => "Legendary Story",
+        97 | 98  => "Flying Dark Shadow",
+        99 | 100 | 101 => "Rolling Around On the Island",
+        102 | 103 | 104 => "Supersonic Tricky Railroad",
+        105 | 106 => "300 IQ Evil Genius",
         _ => "Unknown",
     }
     .to_string()
@@ -428,8 +478,8 @@ pub fn int_to_key(key: i64) -> String {
         38 => "X",
         39 => "Y",
         40 => "Z",
-        51 => "Shift",
-        55 => "Ctrl",
+        51 => "Left Shift",
+        55 => "Left Ctrl",
         1000 => "Left Click",
         1001 => "Right Click",
         _ => return key.to_string(),
@@ -447,7 +497,7 @@ pub fn int_to_controller_btn(btn: i64) -> String {
         4 => "L",
         5 => "R",
         14 => "ZL / L2 / LT",
-        15 => "ZR / L3 / RT",
+        15 => "ZR / R2 / RT",
         8 => "Left Stick Click",
         9 => "Right Stick Click",
         _ => return btn.to_string(),

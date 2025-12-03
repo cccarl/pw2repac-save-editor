@@ -16,7 +16,7 @@ use crate::{
     save_data_info::{
         SaveDataIntType, SaveFileData, array_index_to_input_type, bgm_music_str_to_name,
         costume_int_to_name, get_save_slot_base_add, int_to_controller_btn, int_to_key,
-        int_to_maze_name, int_to_stage_name,
+        int_to_maze_name, int_to_mission_level, int_to_stage_name,
     },
     save_file_parser::{
         get_all_save_file_vars, get_basic_save_file_vars, get_figure_info_from_save_data,
@@ -807,6 +807,12 @@ impl App {
                                         let maze = int_to_maze_name(i);
                                         row.col(|ui| {
                                             ui.label(maze);
+                                        });
+                                    }
+                                    SaveDataVar::MissionFlag => {
+                                        let level_name = int_to_mission_level(i);
+                                        row.col(|ui| {
+                                            ui.label(level_name);
                                         });
                                     }
                                     SaveDataVar::MissionRewardFlag => {

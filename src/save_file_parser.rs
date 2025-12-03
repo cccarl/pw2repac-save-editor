@@ -379,7 +379,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         SaveDataVar::TimeTrialCoopList => SaveFileData {
             variable_name: "m_iStageTimeListCoop".into(),
             variable_name_simple: "Time Trials Coop List".into(),
-            offset: 0x210, // TODO check if this is true lollll
+            offset: 0x210,
             int_type: SaveDataIntType::Arrayi32(LEVELS_COUNT),
             slot_base_add,
             var: req_data,
@@ -619,12 +619,12 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         SaveDataVar::JukeBoxUnlockFlagList => SaveFileData {
             variable_name: "m_bJukeBoxUnlockFlagList".into(),
             variable_name_simple: "Jukebox Flag".into(),
-            offset: 0x5C2, // TODO check the exact start of this, len should be fine since it's 83 songs
+            offset: 0x5C2,
             int_type: SaveDataIntType::Arrayu8(83),
             slot_base_add,
             var: req_data,
         },
-        SaveDataVar::MedalNum => SaveFileData {
+        SaveDataVar::MedalNum=> SaveFileData {
             variable_name: "m_iMedalNum".into(),
             variable_name_simple: "Medals".into(),
             offset: 0x640,
@@ -632,7 +632,14 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             slot_base_add,
             var: req_data,
         },
-        // TODO Capsule flag here
+        SaveDataVar::CapsuleFlag => SaveFileData {
+            variable_name: "m_iCapsuleFlag".into(),
+            variable_name_simple: "Capsule Flags".into(),
+            offset: 0x644,
+            int_type: SaveDataIntType::Arrayi32(150),
+            slot_base_add,
+            var: req_data,
+        },
         SaveDataVar::StageCherryFlag => SaveFileData {
             variable_name: "m_iStageCherryFlag".into(),
             variable_name_simple: "Cherries Obtained Bitfield".into(),
@@ -865,6 +872,14 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             slot_base_add,
             var: req_data,
         },
+        SaveDataVar::MissionFlag => SaveFileData {
+            variable_name: "m_iMissionFlag".into(),
+            variable_name_simple: "Mission Complete Flags".into(),
+            offset: 0x1D3C,
+            int_type: SaveDataIntType::Arrayi32(107), // number of missions
+            slot_base_add,
+            var: req_data,
+        },
         // TODO mission progress here
         SaveDataVar::MissionRewardFlag => SaveFileData {
             variable_name: "m_iMissionRewardFlag".into(),
@@ -896,7 +911,8 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_sFigureInfo".into(),
             variable_name_simple: "Figure Info".into(),
             offset: 0x23E8,
-            int_type: SaveDataIntType::Arrayi32(20), // TODO find length by filling the village
+            // TODO verify len and how this works
+            int_type: SaveDataIntType::Arrayi32(20),
             slot_base_add,
             var: req_data,
         },
@@ -1032,12 +1048,26 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_iHelpFlag".into(),
             variable_name_simple: "Help Flags".into(),
             offset: 0x2E00,
-            int_type: SaveDataIntType::Arrayi32(4), // TODO find length
+            int_type: SaveDataIntType::Arrayi32(50),
             slot_base_add,
             var: req_data,
         },
-        // TODO drone skin flag
-        // TODO dron sking ID
+        SaveDataVar::DroneSkinFlag => SaveFileData {
+            variable_name: "m_iPlayerDroneSkinId".into(),
+            variable_name_simple: "Drone Skin ID".into(),
+            offset: 0x2EF0,
+            int_type: SaveDataIntType::Arrayi32(10),
+            slot_base_add,
+            var: req_data,
+        },
+        SaveDataVar::DroneSkinID => SaveFileData {
+            variable_name: "m_iPlayerDroneSkinFlag".into(),
+            variable_name_simple: "Drone Skin Flag".into(),
+            offset: 0x2EC8,
+            int_type: SaveDataIntType::I32,
+            slot_base_add,
+            var: req_data,
+        },
         SaveDataVar::DroneReticleSpeed => SaveFileData {
             variable_name: "m_iDroneReticleSpeed".into(),
             variable_name_simple: "Drone Reticle Speed".into(),
@@ -1098,7 +1128,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             variable_name: "m_sFigureInfoDLC".into(),
             variable_name_simple: "Figure Info DLC".into(),
             offset: 0x4414,
-            int_type: SaveDataIntType::Arrayi32(10), // TODO find this length
+            int_type: SaveDataIntType::Arrayi32(16),
             slot_base_add,
             var: req_data,
         },

@@ -25,7 +25,10 @@ fn get_file_path() -> Result<String, String> {
                 .join("Saved")
                 .join("SaveGames");
 
-            println!("Reading path: {}", save_games_path.to_str().unwrap_or_default());
+            println!(
+                "Reading path: {}",
+                save_games_path.to_str().unwrap_or_default()
+            );
             let mut save_file_path = String::default();
             match fs::read_dir(save_games_path) {
                 Ok(entries) => {
@@ -46,7 +49,7 @@ fn get_file_path() -> Result<String, String> {
                 }
                 Err(e) => {
                     return Err(format!("Error when reading SaveGames path: {}", e));
-                },
+                }
             }
 
             println!("Final Path is: {}", save_file_path);
@@ -624,7 +627,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
             slot_base_add,
             var: req_data,
         },
-        SaveDataVar::MedalNum=> SaveFileData {
+        SaveDataVar::MedalNum => SaveFileData {
             variable_name: "m_iMedalNum".into(),
             variable_name_simple: "Medals".into(),
             offset: 0x640,

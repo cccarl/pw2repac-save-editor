@@ -65,7 +65,9 @@ pub enum SaveDataVar {
     VillageOrangeGetNum,
     VillageAppleGetNum,
     VillageMelonGetNum,
-    VillageGFFlag, // grand finale? idk what this is
+    // bitfield showing the overall game progress with village curscenes
+    // with 0 it will play the into of the game
+    VillageGFFlag,
     // camera settings
     CameraMode,
     CameraSpeedY,
@@ -164,7 +166,7 @@ pub fn get_save_slot_base_add(slot: u8) -> u32 {
 
 pub fn bgm_music_str_to_name(music: i32) -> String {
     let music_name = match music {
-        -1 => "(Disabled)",
+        -1 => "(Disabled, using DLC music)",
         0 => "Opening",
         1 => "Prologue",
         2 => "Pac-Village",
@@ -240,6 +242,16 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
         83 => "Blinky in the Caldera (Phase 2)",
         84 => "Burning Hot Beats (Phase 1)",
         85 => "Burning Hot Beats (Phase 2)",
+        _ => "(Invalid)",
+    }
+    .to_string();
+
+    format!("{} {}", music, music_name)
+}
+
+pub fn bgm_music_str_to_name_collab(music: i32) -> String {
+        let music_name = match music {
+        -1 => "(Disabled, using non DLC music)",
         // to use in m_iJukeBoxBGMKindCollabo
         86 => "Supersonic Tricky Railroad",
         87 => "South Pac-Island",
@@ -249,7 +261,7 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
         94 => "Results",
         95 => "Results (S-Rank)",
         96 => "Act Clear",
-        _ => "(Unknown)",
+        _ => "(Invalid)",
     }
     .to_string();
 
@@ -387,7 +399,7 @@ pub fn int_to_mission_level(id: usize) -> String {
         90 | 91 => "Pac-Marine Battle!",
         92 | 93 | 94 => "Clumsy Bayou",
         95 | 96 => "Legendary Story",
-        97 | 98  => "Flying Dark Shadow",
+        97 | 98 => "Flying Dark Shadow",
         99 | 100 | 101 => "Rolling Around On the Island",
         102 | 103 | 104 => "Supersonic Tricky Railroad",
         105 | 106 => "300 IQ Evil Genius",

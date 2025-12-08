@@ -495,7 +495,7 @@ pub fn int_to_key(key: i64) -> String {
         55 => "Left Ctrl",
         1000 => "Left Click",
         1001 => "Right Click",
-        _ => return key.to_string(),
+        _ => "(Invalid or Unknown)",
     };
 
     format!("{key} {key_str}")

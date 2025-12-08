@@ -1199,24 +1199,24 @@ impl App {
 
             if var_data.var == SaveDataVar::KeyConfigP1 || var_data.var == SaveDataVar::KeyConfigP2
             {
-                let is_controller = array_index_to_input_type(array_index).contains("Controller");
+                let mut input_config_data = *get_int_array_from_save_data(
+                    save_data_guard.to_vec(),
+                    var_data.slot_base_add,
+                    var_data.offset,
+                    &var_data.int_type,
+                )
+                .get(array_index)
+                .unwrap_or(&-100);
+                let config_before = input_config_data;
 
+                let is_controller = array_index_to_input_type(array_index).contains("Controller");
                 if is_controller {
-                    let mut input_config_data = *get_int_array_from_save_data(
-                        save_data_guard.to_vec(),
-                        var_data.slot_base_add,
-                        var_data.offset,
-                        &var_data.int_type,
-                    )
-                    .get(array_index)
-                    .unwrap_or(&-100);
-                    let config_before = input_config_data;
                     egui::ComboBox::from_label("Pick a Button")
                         .selected_text(int_to_controller_btn(input_config_data))
                         .show_ui(ui, |ui| {
                             for i in 0..=15 {
                                 let button_name = int_to_controller_btn(i);
-                                if !button_name.contains("(Invalid)") {
+                                if !button_name.contains("Invalid") {
                                     ui.selectable_value(&mut input_config_data, i, button_name);
                                 }
                             }
@@ -1230,8 +1230,28 @@ impl App {
                             input_config_data,
                         );
                     }
-                    return;
+                } else {
+                    egui::ComboBox::from_label("Pick a Key")
+                        .selected_text(int_to_key(input_config_data))
+                        .show_ui(ui, |ui| {
+                            for i in 1..=1001 {
+                                let button_name = int_to_key(i);
+                                if !button_name.contains("Invalid") {
+                                    ui.selectable_value(&mut input_config_data, i, button_name);
+                                }
+                            }
+                        });
+                    if input_config_data != config_before {
+                        modify_save_data(
+                            save_data_guard,
+                            var_data.slot_base_add,
+                            var_data.offset + (array_index as u32 * byte_size),
+                            var_data.int_type,
+                            input_config_data,
+                        );
+                    }
                 }
+                return;
             } else if var_data.var == SaveDataVar::StageFlagList
                 || var_data.var == SaveDataVar::MazeFlagList
                 || var_data.var == SaveDataVar::StageMazeFlagList

@@ -301,7 +301,7 @@ impl App {
         let lives_data = get_save_file_variable(SaveDataVar::Lives, save_slot);
         let lives = get_int_value_from_save_data(
             save_data_guard.to_vec(),
-            lives_data.slot_base_add.into(),
+            lives_data.slot_base_add,
             lives_data.offset,
             &lives_data.int_type,
         );
@@ -381,7 +381,7 @@ impl App {
                         ui.label("Time");
                     });
                     row.col(|ui| {
-                        ui.label(format!("{}", final_time));
+                        ui.label(final_time.to_string());
                     });
                 });
             });
@@ -590,7 +590,7 @@ impl App {
 
     fn show_edit_mode_inputs_details_table(
         &mut self,
-        mut save_data: &mut Vec<u8>,
+        save_data: &mut Vec<u8>,
         var_data: &SaveFileData,
         ui: &mut Ui,
     ) {
@@ -707,7 +707,7 @@ impl App {
                     ) > 0
                     {
                         modify_save_data(
-                            &mut save_data,
+                            save_data,
                             var_data.slot_base_add,
                             var_data.offset,
                             var_data.int_type,
@@ -715,7 +715,7 @@ impl App {
                         );
                     } else {
                         modify_save_data(
-                            &mut save_data,
+                            save_data,
                             var_data.slot_base_add,
                             var_data.offset,
                             var_data.int_type,
@@ -734,7 +734,7 @@ impl App {
                         egui::TextEdit::singleline(&mut self.current_user_input)
                             .hint_text("Press Enter To End"),
                     );
-                    if self.current_user_input == "" {
+                    if self.current_user_input.is_empty() {
                         self.current_user_input = "0".into();
                     }
 
@@ -745,7 +745,7 @@ impl App {
                                 && ui.input(|i| i.key_pressed(Key::Enter))
                             {
                                 modify_save_data(
-                                    &mut save_data,
+                                    save_data,
                                     var_data.slot_base_add,
                                     var_data.offset,
                                     var_data.int_type,
@@ -759,11 +759,9 @@ impl App {
                             self.current_user_input = prev_input;
                         }
                     }
-                } else {
-                    if ui.button("Modify").clicked() {
-                        self.current_user_input_selected = Some(var_data.var.clone());
-                        self.current_user_input = "".to_string();
-                    };
+                } else if ui.button("Modify").clicked() {
+                    self.current_user_input_selected = Some(var_data.var.clone());
+                    self.current_user_input = "".to_string();
                 }
             }
 
@@ -776,7 +774,7 @@ impl App {
                         egui::TextEdit::singleline(&mut self.current_user_input)
                             .hint_text("Press Enter To End"),
                     );
-                    if self.current_user_input == "" {
+                    if self.current_user_input.is_empty() {
                         self.current_user_input = "0".into();
                     }
 
@@ -791,7 +789,7 @@ impl App {
                                 && ui.input(|i| i.key_pressed(Key::Enter))
                             {
                                 modify_save_data(
-                                    &mut save_data,
+                                    save_data,
                                     var_data.slot_base_add,
                                     var_data.offset,
                                     var_data.int_type,
@@ -805,11 +803,9 @@ impl App {
                             self.current_user_input = prev_input;
                         }
                     }
-                } else {
-                    if ui.button("Modify").clicked() {
-                        self.current_user_input_selected = Some(var_data.var.clone());
-                        self.current_user_input = "".to_string();
-                    };
+                } else if ui.button("Modify").clicked() {
+                    self.current_user_input_selected = Some(var_data.var.clone());
+                    self.current_user_input = "".to_string();
                 }
             }
             SaveDataIntType::Arrayi32(_)
@@ -977,19 +973,17 @@ impl App {
                                             let minutes = seconds_total / 60;
                                             let seconds = seconds_total % 60;
 
-                                            let ms_str: String;
-                                            if ms < 10 {
-                                                ms_str = format!("0{}", ms);
+                                            let ms_str = if ms < 10 {
+                                                format!("0{}", ms)
                                             } else {
-                                                ms_str = ms.to_string();
-                                            }
+                                                ms.to_string()
+                                            };
 
-                                            let seconds_str: String;
-                                            if seconds < 10 {
-                                                seconds_str = format!("0{}", seconds);
+                                            let seconds_str = if seconds < 10 {
+                                                format!("0{}", seconds)
                                             } else {
-                                                seconds_str = seconds.to_string();
-                                            }
+                                                seconds.to_string()
+                                            };
 
                                             ui.label(format!(
                                                 "{}:{}.{}",
@@ -998,10 +992,10 @@ impl App {
                                         }
                                         SaveDataVar::StageFlagList | SaveDataVar::MazeFlagList => {
                                             match var {
-                                                0 => ui.label(format!("0 Locked")),
-                                                1 => ui.label(format!("1 Unlocked")),
-                                                2 => ui.label(format!("2 Entered")),
-                                                3 => ui.label(format!("3 Complete")),
+                                                0 => ui.label("0 Locked"),
+                                                1 => ui.label("1 Unlocked"),
+                                                2 => ui.label("2 Entered"),
+                                                3 => ui.label("3 Complete"),
                                                 _ => ui.label(var.to_string()),
                                             };
                                         }
@@ -1027,8 +1021,8 @@ impl App {
                                         }
                                         SaveDataVar::StageMazeFlagList => {
                                             match var {
-                                                0 => ui.label(format!("0 Locked")),
-                                                1 => ui.label(format!("1 Unlocked")),
+                                                0 => ui.label("0 Locked"),
+                                                1 => ui.label("1 Unlocked"),
                                                 _ => ui.label(var.to_string()),
                                             };
                                         }
@@ -1093,7 +1087,7 @@ impl App {
                                                 )
                                                 .hint_text("Press Enter To End"),
                                             );
-                                            if self.current_user_input == "" {
+                                            if self.current_user_input.is_empty() {
                                                 self.current_user_input = "0".into();
                                             }
 
@@ -1125,12 +1119,9 @@ impl App {
                                                     self.current_user_input = prev_input;
                                                 }
                                             }
-                                        } else {
-                                            if ui.button("Modify").clicked() {
-                                                self.current_user_input_array_i_selected =
-                                                    Some(i * 2);
-                                                self.current_user_input = "".to_string();
-                                            };
+                                        } else if ui.button("Modify").clicked() {
+                                            self.current_user_input_array_i_selected = Some(i * 2);
+                                            self.current_user_input = "".to_string();
                                         }
                                     }
                                 });
@@ -1180,7 +1171,7 @@ impl App {
 
     fn show_edit_mode_inputs_array_int(
         &mut self,
-        mut save_data_guard: &mut Vec<u8>,
+        save_data_guard: &mut [u8],
         var_data: &SaveFileData,
         ui: &mut Ui,
         array_index: usize,
@@ -1189,43 +1180,41 @@ impl App {
             return;
         }
 
-        if self.show_combobox_when_possible {
-            if var_data.var == SaveDataVar::KeyConfigP1 || var_data.var == SaveDataVar::KeyConfigP2
-            {
-                let is_controller = array_index_to_input_type(array_index).contains("Controller");
+        if self.show_combobox_when_possible && var_data.var == SaveDataVar::KeyConfigP1
+            || var_data.var == SaveDataVar::KeyConfigP2
+        {
+            let is_controller = array_index_to_input_type(array_index).contains("Controller");
 
-                if is_controller {
-                    let mut input_config_data = get_int_array_from_save_data(
-                        save_data_guard.to_vec(),
+            if is_controller {
+                let mut input_config_data = *get_int_array_from_save_data(
+                    save_data_guard.to_vec(),
+                    var_data.slot_base_add,
+                    var_data.offset,
+                    &var_data.int_type,
+                )
+                .get(array_index)
+                .unwrap_or(&-100);
+                let config_before = input_config_data;
+                egui::ComboBox::from_label("Pick a Button")
+                    .selected_text(int_to_controller_btn(input_config_data))
+                    .show_ui(ui, |ui| {
+                        for i in 0..=15 {
+                            let button_name = int_to_controller_btn(i);
+                            if !button_name.contains("(Invalid)") {
+                                ui.selectable_value(&mut input_config_data, i, button_name);
+                            }
+                        }
+                    });
+                if input_config_data != config_before {
+                    modify_save_data(
+                        save_data_guard,
                         var_data.slot_base_add,
                         var_data.offset,
-                        &var_data.int_type,
-                    )
-                    .get(array_index)
-                    .unwrap_or(&-100)
-                    .clone();
-                    let config_before = input_config_data;
-                    egui::ComboBox::from_label("Pick a Button")
-                        .selected_text(int_to_controller_btn(input_config_data))
-                        .show_ui(ui, |ui| {
-                            for i in 0..=15 {
-                                let button_name = int_to_controller_btn(i);
-                                if !button_name.contains("(Invalid)") {
-                                    ui.selectable_value(&mut input_config_data, i, button_name);
-                                }
-                            }
-                        });
-                    if input_config_data != config_before {
-                        modify_save_data(
-                            save_data_guard,
-                            var_data.slot_base_add,
-                            var_data.offset,
-                            var_data.int_type,
-                            input_config_data,
-                        );
-                    }
-                    return;
+                        var_data.int_type,
+                        input_config_data,
+                    );
                 }
+                return;
             }
         }
 
@@ -1239,7 +1228,7 @@ impl App {
                         egui::TextEdit::singleline(&mut self.current_user_input)
                             .hint_text("Press Enter To End"),
                     );
-                    if self.current_user_input == "" {
+                    if self.current_user_input.is_empty() {
                         self.current_user_input = "0".into();
                     }
 
@@ -1254,7 +1243,7 @@ impl App {
                                 && ui.input(|i| i.key_pressed(Key::Enter))
                             {
                                 modify_save_data(
-                                    &mut save_data_guard,
+                                    save_data_guard,
                                     var_data.slot_base_add,
                                     var_data.offset + (array_index as u32 * 4),
                                     var_data.int_type,
@@ -1268,11 +1257,9 @@ impl App {
                             self.current_user_input = prev_input;
                         }
                     }
-                } else {
-                    if ui.button("Modify").clicked() {
-                        self.current_user_input_array_i_selected = Some(array_index);
-                        self.current_user_input = "".to_string();
-                    };
+                } else if ui.button("Modify").clicked() {
+                    self.current_user_input_array_i_selected = Some(array_index);
+                    self.current_user_input = "".to_string();
                 }
             }
             SaveDataIntType::Arrayu8(_) => {
@@ -1284,7 +1271,7 @@ impl App {
                         egui::TextEdit::singleline(&mut self.current_user_input)
                             .hint_text("Press Enter To End"),
                     );
-                    if self.current_user_input == "" {
+                    if self.current_user_input.is_empty() {
                         self.current_user_input = "0".into();
                     }
 
@@ -1299,7 +1286,7 @@ impl App {
                                 && ui.input(|i| i.key_pressed(Key::Enter))
                             {
                                 modify_save_data(
-                                    &mut save_data_guard,
+                                    save_data_guard,
                                     var_data.slot_base_add,
                                     var_data.offset + (array_index as u32),
                                     var_data.int_type,
@@ -1313,11 +1300,9 @@ impl App {
                             self.current_user_input = prev_input;
                         }
                     }
-                } else {
-                    if ui.button("Modify").clicked() {
-                        self.current_user_input_array_i_selected = Some(array_index);
-                        self.current_user_input = "".to_string();
-                    };
+                } else if ui.button("Modify").clicked() {
+                    self.current_user_input_array_i_selected = Some(array_index);
+                    self.current_user_input = "".to_string();
                 }
             }
             SaveDataIntType::ArrayText(_) => {
@@ -1332,7 +1317,7 @@ impl App {
 
     fn show_edit_mode_inputs_array_sfigure(
         &mut self,
-        mut save_data_guard: &mut Vec<u8>,
+        save_data_guard: &mut [u8],
         var_data: &SaveFileData,
         ui: &mut Ui,
         i: usize,
@@ -1349,7 +1334,7 @@ impl App {
                 egui::TextEdit::singleline(&mut self.current_user_input)
                     .hint_text("Press Enter To End"),
             );
-            if self.current_user_input == "" {
+            if self.current_user_input.is_empty() {
                 self.current_user_input = "0".into();
             }
 
@@ -1362,7 +1347,7 @@ impl App {
                 Ok(num) => {
                     if input_response.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
                         modify_save_data_float(
-                            &mut save_data_guard,
+                            save_data_guard,
                             var_data.slot_base_add,
                             var_data.offset + (i as u32 * data_size + 4),
                             num,
@@ -1375,11 +1360,9 @@ impl App {
                     self.current_user_input = prev_input;
                 }
             }
-        } else {
-            if ui.button("Modify").clicked() {
-                self.current_user_input_array_i_selected = Some(i * 2 + 1);
-                self.current_user_input = "".to_string();
-            };
+        } else if ui.button("Modify").clicked() {
+            self.current_user_input_array_i_selected = Some(i * 2 + 1);
+            self.current_user_input = "".to_string();
         }
     }
 
@@ -1407,10 +1390,10 @@ impl App {
                             // This causes the current modals `should_close` to return true
                             ui.close();
                         }
-                        return false;
+                        false
                     },
                 );
-                return close_clicked.1;
+                close_clicked.1
             });
 
         if modal.should_close() {

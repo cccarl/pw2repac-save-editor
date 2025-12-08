@@ -55,9 +55,7 @@ fn get_file_path() -> Result<String, String> {
             println!("Final Path is: {}", save_file_path);
             Ok(save_file_path)
         }
-        Err(var_err) => {
-            return Err(format!("Error in local data path value: {}", var_err));
-        }
+        Err(var_err) => Err(format!("Error in local data path value: {}", var_err)),
     }
 }
 
@@ -73,7 +71,7 @@ pub fn read_save_file() -> Result<Vec<u8>, String> {
                 Err(err) => Err(format!("Error when reading bytes from save file: {}", err)),
             }
         }
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 
@@ -222,46 +220,36 @@ pub fn get_all_save_file_vars(slot: u8) -> Vec<SaveFileData> {
 }
 
 pub fn get_basic_save_file_vars(slot: u8) -> Vec<SaveFileData> {
-    let mut basic_vars = vec![];
-    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeHours, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeMinutes, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::PlayTimeSeconds, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::ScoreList, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::TimeTrialList, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::StageMazeFlagList, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::MazesScoreList, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::Lives, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::MagicKeyUnlocked, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::JukeBoxBGM, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::JukeBoxBGMCollab, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::MedalNum, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::CameraSpeedX, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::CameraSpeedY, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::CameraControlX, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::CameraControlY, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::CameraAssistFlag, slot));
-    basic_vars.push(get_save_file_variable(
-        SaveDataVar::CameraYAutoRotateFlag,
-        slot,
-    ));
-    basic_vars.push(get_save_file_variable(SaveDataVar::KeyConfigP1, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::PlayerSkinId, slot));
-    basic_vars.push(get_save_file_variable(
-        SaveDataVar::PlayerSkinIdCollab,
-        slot,
-    ));
-    basic_vars.push(get_save_file_variable(SaveDataVar::OriginalHighScore, slot));
-    basic_vars.push(get_save_file_variable(SaveDataVar::PacmaniaHighScore, slot));
-    basic_vars.push(get_save_file_variable(
-        SaveDataVar::PacAttackHighScore,
-        slot,
-    ));
-
-    basic_vars
+    vec![
+        get_save_file_variable(SaveDataVar::PlayTimeHours, slot),
+        get_save_file_variable(SaveDataVar::PlayTimeMinutes, slot),
+        get_save_file_variable(SaveDataVar::PlayTimeSeconds, slot),
+        get_save_file_variable(SaveDataVar::ScoreList, slot),
+        get_save_file_variable(SaveDataVar::TimeTrialList, slot),
+        get_save_file_variable(SaveDataVar::StageMazeFlagList, slot),
+        get_save_file_variable(SaveDataVar::MazesScoreList, slot),
+        get_save_file_variable(SaveDataVar::Lives, slot),
+        get_save_file_variable(SaveDataVar::MagicKeyUnlocked, slot),
+        get_save_file_variable(SaveDataVar::JukeBoxBGM, slot),
+        get_save_file_variable(SaveDataVar::JukeBoxBGMCollab, slot),
+        get_save_file_variable(SaveDataVar::MedalNum, slot),
+        get_save_file_variable(SaveDataVar::CameraSpeedX, slot),
+        get_save_file_variable(SaveDataVar::CameraSpeedY, slot),
+        get_save_file_variable(SaveDataVar::CameraControlX, slot),
+        get_save_file_variable(SaveDataVar::CameraControlY, slot),
+        get_save_file_variable(SaveDataVar::CameraAssistFlag, slot),
+        get_save_file_variable(SaveDataVar::CameraYAutoRotateFlag, slot),
+        get_save_file_variable(SaveDataVar::KeyConfigP1, slot),
+        get_save_file_variable(SaveDataVar::PlayerSkinId, slot),
+        get_save_file_variable(SaveDataVar::PlayerSkinIdCollab, slot),
+        get_save_file_variable(SaveDataVar::OriginalHighScore, slot),
+        get_save_file_variable(SaveDataVar::PacmaniaHighScore, slot),
+        get_save_file_variable(SaveDataVar::PacAttackHighScore, slot),
+    ]
 }
 
 pub fn modify_save_data(
-    save_data: &mut Vec<u8>,
+    save_data: &mut [u8],
     slot_base_add: u32,
     offset: u32,
     int_type: SaveDataIntType,
@@ -299,13 +287,13 @@ pub fn modify_save_data(
 }
 
 pub fn modify_save_data_float(
-    save_data: &mut Vec<u8>,
+    save_data: &mut [u8],
     slot_base_add: u32,
     offset: u32,
     value_to_write: f32,
 ) {
     let pos_to_write = (slot_base_add + offset) as usize;
-    let value_to_bytes: [u8; 4] = (value_to_write as f32).to_le_bytes();
+    let value_to_bytes: [u8; 4] = (value_to_write).to_le_bytes();
     for (i, byte) in value_to_bytes.iter().enumerate() {
         save_data[pos_to_write + i] = *byte;
     }

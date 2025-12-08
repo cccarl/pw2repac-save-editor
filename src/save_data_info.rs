@@ -304,7 +304,7 @@ pub fn costume_int_to_name(costume_id: i32) -> String {
         0x1e => "Pac-Land",
         0x1f => "Spooky",
         0x20 => "Sonic",
-        _ => "(Unknown)",
+        _ => "(Invalid)",
     }
     .to_string();
 

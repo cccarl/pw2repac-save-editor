@@ -553,9 +553,11 @@ impl App {
                                     SaveDataVar::PlayerSkinId
                                     | SaveDataVar::PlayerSkinId2
                                     | SaveDataVar::PlayerSkinIdCollab => {
-                                        ui.label(costume_int_to_name(
-                                            value_str.parse().unwrap_or(-100),
-                                        ));
+                                        if !self.edit_mode {
+                                            ui.label(costume_int_to_name(
+                                                value_str.parse().unwrap_or(-100),
+                                            ));
+                                        }
                                     }
                                     _ => {
                                         ui.label(value_str);
@@ -588,7 +590,6 @@ impl App {
         }
 
         if var_data.var == SaveDataVar::JukeBoxBGM {
-
             let mut music_picked = get_int_value_from_save_data(
                 save_data.to_vec(),
                 var_data.slot_base_add,
@@ -616,9 +617,7 @@ impl App {
                 );
             }
             return;
-        }
-        else if var_data.var == SaveDataVar::JukeBoxBGMCollab {
-
+        } else if var_data.var == SaveDataVar::JukeBoxBGMCollab {
             let mut music_picked = get_int_value_from_save_data(
                 save_data.to_vec(),
                 var_data.slot_base_add,
@@ -646,6 +645,44 @@ impl App {
                 );
             }
             return;
+        } else if var_data.var == SaveDataVar::PlayerSkinId
+            || var_data.var == SaveDataVar::PlayerSkinId2
+            || var_data.var == SaveDataVar::PlayerSkinIdCollab
+        {
+            let mut skin_picked = get_int_value_from_save_data(
+                save_data.to_vec(),
+                var_data.slot_base_add,
+                var_data.offset,
+                &var_data.int_type,
+            );
+            let skin_picked_before = skin_picked;
+            egui::ComboBox::from_label("Pick a Costume")
+                .selected_text(costume_int_to_name(skin_picked as i32))
+                .show_ui(ui, |ui| {
+                    if var_data.var == SaveDataVar::PlayerSkinId
+                        || var_data.var == SaveDataVar::PlayerSkinId2
+                    {
+                        for i in -1..=31 {
+                            let skin_name = costume_int_to_name(i);
+
+                            ui.selectable_value(&mut skin_picked, i.into(), skin_name);
+                        }
+                    } else {
+                        let skin_name = costume_int_to_name(-1);
+                        ui.selectable_value(&mut 32, -1, skin_name);
+                        let skin_name = costume_int_to_name(32);
+                        ui.selectable_value(&mut 32, 32, skin_name);
+                    }
+                });
+            if skin_picked != skin_picked_before {
+                modify_save_data(
+                    save_data,
+                    var_data.slot_base_add,
+                    var_data.offset,
+                    var_data.int_type,
+                    skin_picked,
+                );
+            }
         }
 
         match var_data.int_type {

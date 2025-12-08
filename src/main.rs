@@ -52,9 +52,13 @@ struct App {
     current_view: CurrentMenu,
     single_save_file_view: SaveFileCurrentView,
     edit_mode: bool,
+
+    // view settings
     show_save_code_variables: bool,
     show_addresses: bool,
     show_simple_data_only: bool,
+    show_combobox_when_possible: bool,
+
     save_slot_chosen: u8,
     scroll_to_top: bool,
     edited_save_file: bool,
@@ -107,6 +111,7 @@ fn main() -> Result<(), eframe::Error> {
             Ok(Box::<App>::new(App {
                 show_addresses: true,
                 show_simple_data_only: true,
+                show_combobox_when_possible: true,
                 ..Default::default()
             }))
         }),
@@ -215,6 +220,10 @@ impl App {
                     ui.checkbox(&mut self.show_simple_data_only, "Basic Data Only");
                     ui.checkbox(&mut self.show_addresses, "Show Addresses");
                     ui.checkbox(&mut self.show_save_code_variables, "Show Names in Code");
+                    ui.checkbox(
+                        &mut self.show_combobox_when_possible,
+                        "Use Dropdown Menu When Possible",
+                    );
                 });
             });
         });
@@ -537,14 +546,14 @@ impl App {
                             } else {
                                 match var_data.var {
                                     SaveDataVar::JukeBoxBGM => {
-                                        if !self.edit_mode {
+                                        if !self.edit_mode || !self.show_combobox_when_possible {
                                             ui.label(bgm_music_str_to_name(
                                                 value_str.parse().unwrap_or(-100),
                                             ));
                                         }
                                     }
                                     SaveDataVar::JukeBoxBGMCollab => {
-                                        if !self.edit_mode {
+                                        if !self.edit_mode || !self.show_combobox_when_possible {
                                             ui.label(bgm_music_str_to_name_collab(
                                                 value_str.parse().unwrap_or(-100),
                                             ));
@@ -553,7 +562,7 @@ impl App {
                                     SaveDataVar::PlayerSkinId
                                     | SaveDataVar::PlayerSkinId2
                                     | SaveDataVar::PlayerSkinIdCollab => {
-                                        if !self.edit_mode {
+                                        if !self.edit_mode || !self.show_combobox_when_possible {
                                             ui.label(costume_int_to_name(
                                                 value_str.parse().unwrap_or(-100),
                                             ));
@@ -589,99 +598,101 @@ impl App {
             return;
         }
 
-        if var_data.var == SaveDataVar::JukeBoxBGM {
-            let mut music_picked = get_int_value_from_save_data(
-                save_data.to_vec(),
-                var_data.slot_base_add,
-                var_data.offset,
-                &var_data.int_type,
-            );
-            let music_picked_before = music_picked;
-            egui::ComboBox::from_label("Pick a Song")
-                .selected_text(bgm_music_str_to_name(music_picked as i32))
-                .show_ui(ui, |ui| {
-                    for i in -1..=85 {
-                        let song_name = bgm_music_str_to_name(i);
-                        if !song_name.contains("(Invalid)") {
-                            ui.selectable_value(&mut music_picked, i.into(), song_name);
-                        }
-                    }
-                });
-            if music_picked != music_picked_before {
-                modify_save_data(
-                    save_data,
+        if self.show_combobox_when_possible {
+            if var_data.var == SaveDataVar::JukeBoxBGM {
+                let mut music_picked = get_int_value_from_save_data(
+                    save_data.to_vec(),
                     var_data.slot_base_add,
                     var_data.offset,
-                    var_data.int_type,
-                    music_picked,
+                    &var_data.int_type,
                 );
-            }
-            return;
-        } else if var_data.var == SaveDataVar::JukeBoxBGMCollab {
-            let mut music_picked = get_int_value_from_save_data(
-                save_data.to_vec(),
-                var_data.slot_base_add,
-                var_data.offset,
-                &var_data.int_type,
-            );
-            let music_picked_before = music_picked;
-            egui::ComboBox::from_label("Pick a Song")
-                .selected_text(bgm_music_str_to_name_collab(music_picked as i32))
-                .show_ui(ui, |ui| {
-                    for i in -1..=96 {
-                        let song_name = bgm_music_str_to_name_collab(i);
-                        if !song_name.contains("(Invalid)") {
-                            ui.selectable_value(&mut music_picked, i.into(), song_name);
+                let music_picked_before = music_picked;
+                egui::ComboBox::from_label("Pick a Song")
+                    .selected_text(bgm_music_str_to_name(music_picked as i32))
+                    .show_ui(ui, |ui| {
+                        for i in -1..=85 {
+                            let song_name = bgm_music_str_to_name(i);
+                            if !song_name.contains("(Invalid)") {
+                                ui.selectable_value(&mut music_picked, i.into(), song_name);
+                            }
                         }
-                    }
-                });
-            if music_picked != music_picked_before {
-                modify_save_data(
-                    save_data,
+                    });
+                if music_picked != music_picked_before {
+                    modify_save_data(
+                        save_data,
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        var_data.int_type,
+                        music_picked,
+                    );
+                }
+                return;
+            } else if var_data.var == SaveDataVar::JukeBoxBGMCollab {
+                let mut music_picked = get_int_value_from_save_data(
+                    save_data.to_vec(),
                     var_data.slot_base_add,
                     var_data.offset,
-                    var_data.int_type,
-                    music_picked,
+                    &var_data.int_type,
                 );
-            }
-            return;
-        } else if var_data.var == SaveDataVar::PlayerSkinId
-            || var_data.var == SaveDataVar::PlayerSkinId2
-            || var_data.var == SaveDataVar::PlayerSkinIdCollab
-        {
-            let mut skin_picked = get_int_value_from_save_data(
-                save_data.to_vec(),
-                var_data.slot_base_add,
-                var_data.offset,
-                &var_data.int_type,
-            );
-            let skin_picked_before = skin_picked;
-            egui::ComboBox::from_label("Pick a Costume")
-                .selected_text(costume_int_to_name(skin_picked as i32))
-                .show_ui(ui, |ui| {
-                    if var_data.var == SaveDataVar::PlayerSkinId
-                        || var_data.var == SaveDataVar::PlayerSkinId2
-                    {
-                        for i in -1..=31 {
-                            let skin_name = costume_int_to_name(i);
+                let music_picked_before = music_picked;
+                egui::ComboBox::from_label("Pick a Song")
+                    .selected_text(bgm_music_str_to_name_collab(music_picked as i32))
+                    .show_ui(ui, |ui| {
+                        for i in -1..=96 {
+                            let song_name = bgm_music_str_to_name_collab(i);
+                            if !song_name.contains("(Invalid)") {
+                                ui.selectable_value(&mut music_picked, i.into(), song_name);
+                            }
+                        }
+                    });
+                if music_picked != music_picked_before {
+                    modify_save_data(
+                        save_data,
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        var_data.int_type,
+                        music_picked,
+                    );
+                }
+                return;
+            } else if var_data.var == SaveDataVar::PlayerSkinId
+                || var_data.var == SaveDataVar::PlayerSkinId2
+                || var_data.var == SaveDataVar::PlayerSkinIdCollab
+            {
+                let mut skin_picked = get_int_value_from_save_data(
+                    save_data.to_vec(),
+                    var_data.slot_base_add,
+                    var_data.offset,
+                    &var_data.int_type,
+                );
+                let skin_picked_before = skin_picked;
+                egui::ComboBox::from_label("Pick a Costume")
+                    .selected_text(costume_int_to_name(skin_picked as i32))
+                    .show_ui(ui, |ui| {
+                        if var_data.var == SaveDataVar::PlayerSkinId
+                            || var_data.var == SaveDataVar::PlayerSkinId2
+                        {
+                            for i in -1..=31 {
+                                let skin_name = costume_int_to_name(i);
 
-                            ui.selectable_value(&mut skin_picked, i.into(), skin_name);
+                                ui.selectable_value(&mut skin_picked, i.into(), skin_name);
+                            }
+                        } else {
+                            let skin_name = costume_int_to_name(-1);
+                            ui.selectable_value(&mut 32, -1, skin_name);
+                            let skin_name = costume_int_to_name(32);
+                            ui.selectable_value(&mut 32, 32, skin_name);
                         }
-                    } else {
-                        let skin_name = costume_int_to_name(-1);
-                        ui.selectable_value(&mut 32, -1, skin_name);
-                        let skin_name = costume_int_to_name(32);
-                        ui.selectable_value(&mut 32, 32, skin_name);
-                    }
-                });
-            if skin_picked != skin_picked_before {
-                modify_save_data(
-                    save_data,
-                    var_data.slot_base_add,
-                    var_data.offset,
-                    var_data.int_type,
-                    skin_picked,
-                );
+                    });
+                if skin_picked != skin_picked_before {
+                    modify_save_data(
+                        save_data,
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        var_data.int_type,
+                        skin_picked,
+                    );
+                }
             }
         }
 
@@ -995,12 +1006,15 @@ impl App {
                                             };
                                         }
                                         SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
-                                            let is_controller =
-                                                array_index_to_input_type(i).contains("Controller");
-                                            if is_controller {
-                                                ui.label(int_to_controller_btn(*var));
-                                            } else {
-                                                ui.label(int_to_key(*var));
+                                            if !self.edit_mode || !self.show_combobox_when_possible
+                                            {
+                                                let is_controller = array_index_to_input_type(i)
+                                                    .contains("Controller");
+                                                if is_controller {
+                                                    ui.label(int_to_controller_btn(*var));
+                                                } else {
+                                                    ui.label(int_to_key(*var));
+                                                }
                                             }
                                         }
 
@@ -1169,15 +1183,56 @@ impl App {
         mut save_data_guard: &mut Vec<u8>,
         var_data: &SaveFileData,
         ui: &mut Ui,
-        i: usize,
+        array_index: usize,
     ) {
         if !self.edit_mode {
             return;
         }
+
+        if self.show_combobox_when_possible {
+            if var_data.var == SaveDataVar::KeyConfigP1 || var_data.var == SaveDataVar::KeyConfigP2
+            {
+                let is_controller = array_index_to_input_type(array_index).contains("Controller");
+
+                if is_controller {
+                    let mut input_config_data = get_int_array_from_save_data(
+                        save_data_guard.to_vec(),
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        &var_data.int_type,
+                    )
+                    .get(array_index)
+                    .unwrap_or(&-100)
+                    .clone();
+                    let config_before = input_config_data;
+                    egui::ComboBox::from_label("Pick a Button")
+                        .selected_text(int_to_controller_btn(input_config_data))
+                        .show_ui(ui, |ui| {
+                            for i in 0..=15 {
+                                let button_name = int_to_controller_btn(i);
+                                if !button_name.contains("(Invalid)") {
+                                    ui.selectable_value(&mut input_config_data, i, button_name);
+                                }
+                            }
+                        });
+                    if input_config_data != config_before {
+                        modify_save_data(
+                            save_data_guard,
+                            var_data.slot_base_add,
+                            var_data.offset,
+                            var_data.int_type,
+                            input_config_data,
+                        );
+                    }
+                    return;
+                }
+            }
+        }
+
         match var_data.int_type {
             SaveDataIntType::Arrayi32(_) => {
                 if self.current_user_input_array_i_selected.is_some()
-                    && i == self.current_user_input_array_i_selected.unwrap_or_default()
+                    && array_index == self.current_user_input_array_i_selected.unwrap_or_default()
                 {
                     let prev_input = self.current_user_input.clone();
                     let input_response = ui.add(
@@ -1201,7 +1256,7 @@ impl App {
                                 modify_save_data(
                                     &mut save_data_guard,
                                     var_data.slot_base_add,
-                                    var_data.offset + (i as u32 * 4),
+                                    var_data.offset + (array_index as u32 * 4),
                                     var_data.int_type,
                                     num.into(),
                                 );
@@ -1215,14 +1270,14 @@ impl App {
                     }
                 } else {
                     if ui.button("Modify").clicked() {
-                        self.current_user_input_array_i_selected = Some(i);
+                        self.current_user_input_array_i_selected = Some(array_index);
                         self.current_user_input = "".to_string();
                     };
                 }
             }
             SaveDataIntType::Arrayu8(_) => {
                 if self.current_user_input_array_i_selected.is_some()
-                    && i == self.current_user_input_array_i_selected.unwrap_or_default()
+                    && array_index == self.current_user_input_array_i_selected.unwrap_or_default()
                 {
                     let prev_input = self.current_user_input.clone();
                     let input_response = ui.add(
@@ -1246,7 +1301,7 @@ impl App {
                                 modify_save_data(
                                     &mut save_data_guard,
                                     var_data.slot_base_add,
-                                    var_data.offset + (i as u32),
+                                    var_data.offset + (array_index as u32),
                                     var_data.int_type,
                                     num.into(),
                                 );
@@ -1260,7 +1315,7 @@ impl App {
                     }
                 } else {
                     if ui.button("Modify").clicked() {
-                        self.current_user_input_array_i_selected = Some(i);
+                        self.current_user_input_array_i_selected = Some(array_index);
                         self.current_user_input = "".to_string();
                     };
                 }

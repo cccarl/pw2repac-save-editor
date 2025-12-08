@@ -119,7 +119,7 @@ pub fn get_int_value_from_save_data(
         | SaveDataIntType::ArrayText(_)
         | SaveDataIntType::Arrayu8(_)
         | SaveDataIntType::SFigureDisplayInfoArray(_) => {
-            println!("Wrong function for this... offset: {}", offset);
+            println!("Wrong function for this... offset: {:X}", offset);
             0
         }
     }

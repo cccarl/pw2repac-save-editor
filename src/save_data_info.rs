@@ -172,7 +172,7 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
         2 => "Pac-Village",
         3 => "The Bear Basics",
         4 => "Canyon Chaos",
-        5 => "Pac-Dot Pong",
+        5 => "Pac-Dot Pond",
         6 => "Clyde's Frog",
         7 => "B-Doing Woods",
         8 => "Treewood Forest",
@@ -250,7 +250,7 @@ pub fn bgm_music_str_to_name(music: i32) -> String {
 }
 
 pub fn bgm_music_str_to_name_collab(music: i32) -> String {
-        let music_name = match music {
+    let music_name = match music {
         -1 => "(Disabled, using non DLC music)",
         // to use in m_iJukeBoxBGMKindCollabo
         86 => "Supersonic Tricky Railroad",
@@ -360,6 +360,7 @@ pub fn int_to_stage_name(id: usize, pac_village_start: bool) -> String {
     }
     .to_string()
 }
+
 pub fn int_to_mission_level(id: usize) -> String {
     match id {
         0 => "Pac-Village",
@@ -512,7 +513,7 @@ pub fn int_to_controller_btn(btn: i64) -> String {
         15 => "ZR / R2 / RT",
         8 => "Left Stick Click",
         9 => "Right Stick Click",
-        _ => return btn.to_string(),
+        _ => "(Invalid)",
     };
 
     format!("{btn} {btn_str}")

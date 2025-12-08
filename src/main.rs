@@ -222,7 +222,7 @@ impl App {
                     ui.checkbox(&mut self.show_save_code_variables, "Show Names in Code");
                     ui.checkbox(
                         &mut self.show_combobox_when_possible,
-                        "Use Dropdown Menu When Possible",
+                        "Use Dropdown Menu When Applicable",
                     );
                 });
             });
@@ -991,13 +991,16 @@ impl App {
                                             ));
                                         }
                                         SaveDataVar::StageFlagList | SaveDataVar::MazeFlagList => {
-                                            match var {
-                                                0 => ui.label("0 Locked"),
-                                                1 => ui.label("1 Unlocked"),
-                                                2 => ui.label("2 Entered"),
-                                                3 => ui.label("3 Complete"),
-                                                _ => ui.label(var.to_string()),
-                                            };
+                                            if !self.edit_mode || !self.show_combobox_when_possible
+                                            {
+                                                match var {
+                                                    0 => ui.label("0 Locked"),
+                                                    1 => ui.label("1 Unlocked"),
+                                                    2 => ui.label("2 Entered"),
+                                                    3 => ui.label("3 Complete"),
+                                                    _ => ui.label(var.to_string()),
+                                                };
+                                            }
                                         }
                                         SaveDataVar::KeyConfigP1 | SaveDataVar::KeyConfigP2 => {
                                             if !self.edit_mode || !self.show_combobox_when_possible
@@ -1020,11 +1023,14 @@ impl App {
                                             ui.label(format!("{} ({:b})", var, var));
                                         }
                                         SaveDataVar::StageMazeFlagList => {
-                                            match var {
-                                                0 => ui.label("0 Locked"),
-                                                1 => ui.label("1 Unlocked"),
-                                                _ => ui.label(var.to_string()),
-                                            };
+                                            if !self.edit_mode || !self.show_combobox_when_possible
+                                            {
+                                                match var {
+                                                    0 => ui.label("0 Locked"),
+                                                    1 => ui.label("1 Unlocked"),
+                                                    _ => ui.label(var.to_string()),
+                                                };
+                                            }
                                         }
                                         _ => {
                                             ui.label(var.to_string());
@@ -1180,13 +1186,57 @@ impl App {
             return;
         }
 
-        if self.show_combobox_when_possible && var_data.var == SaveDataVar::KeyConfigP1
-            || var_data.var == SaveDataVar::KeyConfigP2
-        {
-            let is_controller = array_index_to_input_type(array_index).contains("Controller");
+        if self.show_combobox_when_possible {
+            let byte_size = match var_data.int_type {
+                SaveDataIntType::Arrayi32(_) => 4,
+                SaveDataIntType::Arrayu8(_) => 1,
+                // these should never happen
+                _ => {
+                    println!("Somehow an int case is in this array only function");
+                    0
+                }
+            };
 
-            if is_controller {
-                let mut input_config_data = *get_int_array_from_save_data(
+            if var_data.var == SaveDataVar::KeyConfigP1 || var_data.var == SaveDataVar::KeyConfigP2
+            {
+                let is_controller = array_index_to_input_type(array_index).contains("Controller");
+
+                if is_controller {
+                    let mut input_config_data = *get_int_array_from_save_data(
+                        save_data_guard.to_vec(),
+                        var_data.slot_base_add,
+                        var_data.offset,
+                        &var_data.int_type,
+                    )
+                    .get(array_index)
+                    .unwrap_or(&-100);
+                    let config_before = input_config_data;
+                    egui::ComboBox::from_label("Pick a Button")
+                        .selected_text(int_to_controller_btn(input_config_data))
+                        .show_ui(ui, |ui| {
+                            for i in 0..=15 {
+                                let button_name = int_to_controller_btn(i);
+                                if !button_name.contains("(Invalid)") {
+                                    ui.selectable_value(&mut input_config_data, i, button_name);
+                                }
+                            }
+                        });
+                    if input_config_data != config_before {
+                        modify_save_data(
+                            save_data_guard,
+                            var_data.slot_base_add,
+                            var_data.offset + (array_index as u32 * byte_size),
+                            var_data.int_type,
+                            input_config_data,
+                        );
+                    }
+                    return;
+                }
+            } else if var_data.var == SaveDataVar::StageFlagList
+                || var_data.var == SaveDataVar::MazeFlagList
+                || var_data.var == SaveDataVar::StageMazeFlagList
+            {
+                let mut complete_state = *get_int_array_from_save_data(
                     save_data_guard.to_vec(),
                     var_data.slot_base_add,
                     var_data.offset,
@@ -1194,24 +1244,34 @@ impl App {
                 )
                 .get(array_index)
                 .unwrap_or(&-100);
-                let config_before = input_config_data;
-                egui::ComboBox::from_label("Pick a Button")
-                    .selected_text(int_to_controller_btn(input_config_data))
+                let complete_state_before = complete_state;
+
+                let text = match complete_state {
+                    0 => "0 Locked".to_string(),
+                    1 => "1 Unlocked".to_string(),
+                    2 => "2 Entered".to_string(),
+                    3 => "3 Complete".to_string(),
+                    _ => format!("{} (invalid)", complete_state),
+                };
+
+                egui::ComboBox::from_label("Pick State")
+                    .selected_text(text)
                     .show_ui(ui, |ui| {
-                        for i in 0..=15 {
-                            let button_name = int_to_controller_btn(i);
-                            if !button_name.contains("(Invalid)") {
-                                ui.selectable_value(&mut input_config_data, i, button_name);
-                            }
+                        ui.selectable_value(&mut complete_state, 0, "0 Locked");
+                        ui.selectable_value(&mut complete_state, 1, "1 Unlocked");
+                        if var_data.var != SaveDataVar::StageMazeFlagList {
+                            ui.selectable_value(&mut complete_state, 2, "2 Entered");
+                            ui.selectable_value(&mut complete_state, 3, "3 Complete");
                         }
                     });
-                if input_config_data != config_before {
+
+                if complete_state != complete_state_before {
                     modify_save_data(
                         save_data_guard,
                         var_data.slot_base_add,
-                        var_data.offset,
+                        var_data.offset + (array_index as u32 * byte_size),
                         var_data.int_type,
-                        input_config_data,
+                        complete_state,
                     );
                 }
                 return;
@@ -1326,6 +1386,7 @@ impl App {
         if !self.edit_mode {
             return;
         }
+
         if self.current_user_input_array_i_selected.is_some()
             && (i * 2 + 1) == self.current_user_input_array_i_selected.unwrap_or_default()
         {

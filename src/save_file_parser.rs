@@ -15,48 +15,89 @@ pub struct SFigureDisplayInfo {
 }
 
 fn get_file_path() -> Result<String, String> {
-    let pac_save_path_res = env::var("LOCALAPPDATA");
-    match pac_save_path_res {
-        Ok(local_app_data_path_str) => {
-            let local_data_path = Path::new(&local_app_data_path_str);
-            let save_games_path = local_data_path
-                .join("BANDAI NAMCO Entertainment")
-                .join("PAC-MAN WORLD2 Re-Pac")
-                .join("Saved")
-                .join("SaveGames");
-
-            println!(
-                "Reading path: {}",
-                save_games_path.to_str().unwrap_or_default()
-            );
-            let mut save_file_path = String::default();
-            match fs::read_dir(save_games_path) {
-                Ok(entries) => {
-                    // just assume there's 1 folder so "last" element will be in the path
-                    for entry_res in entries {
-                        match entry_res {
-                            Ok(entry) => {
-                                save_file_path = entry
-                                    .path()
-                                    .join("DAT00000.dat")
-                                    .to_str()
-                                    .unwrap_or_default()
-                                    .to_string();
-                            }
-                            Err(e) => eprintln!("Error reading save directory entry: {}", e),
-                        }
+    let pac_save_local_app_data_win = env::var("LOCALAPPDATA");
+    match pac_save_local_app_data_win {
+        Ok(local_app_data_path_str) => get_final_path(local_app_data_path_str, false),
+        Err(var_err) => {
+            eprintln!("Error in local data path value: {}", var_err);
+            println!("Trying linux path now");
+            // try linux path now
+            let pac_save_path_linux = env::var_os("HOME");
+            match pac_save_path_linux {
+                Some(home_path) => {
+                    let home_to_string = home_path.to_str();
+                    match home_to_string {
+                        Some(home_str) => get_final_path(home_str.to_string(), true),
+                        None => Err(String::from(
+                            "Could not parse the linux OS string to String!",
+                        )),
                     }
                 }
-                Err(e) => {
-                    return Err(format!("Error when reading SaveGames path: {}", e));
+                None => Err("Linux HOME could not be found!".to_string()),
+            }
+        }
+    }
+}
+
+fn get_final_path(base_variable_path: String, is_linux: bool) -> Result<String, String> {
+    let local_data_path = Path::new(&base_variable_path);
+    let save_games_path = if !is_linux {
+        local_data_path
+            .join("BANDAI NAMCO Entertainment")
+            .join("PAC-MAN WORLD2 Re-Pac")
+            .join("Saved")
+            .join("SaveGames")
+    } else {
+        local_data_path
+            .join(".var")
+            .join("app")
+            .join("com.valvesoftware.Steam")
+            .join(".steam")
+            .join("steam")
+            .join("steamapps")
+            .join("compatdata")
+            .join("2324290")
+            .join("pfx")
+            .join("drive_c")
+            .join("users")
+            .join("steamuser")
+            .join("AppData")
+            .join("Local")
+            .join("BANDAI NAMCO Entertainment")
+            .join("PAC-MAN WORLD2 Re-Pac")
+            .join("Saved")
+            .join("SaveGames")
+    };
+
+    println!(
+        "Reading path: {}",
+        save_games_path.to_str().unwrap_or_default()
+    );
+    let mut save_file_path = String::default();
+    match fs::read_dir(save_games_path) {
+        Ok(entries) => {
+            // just assume there's 1 folder so "last" element will be in the path
+            for entry_res in entries {
+                match entry_res {
+                    Ok(entry) => {
+                        save_file_path = entry
+                            .path()
+                            .join("DAT00000.dat")
+                            .to_str()
+                            .unwrap_or_default()
+                            .to_string();
+                    }
+                    Err(e) => eprintln!("Error reading save directory entry: {}", e),
                 }
             }
-
-            println!("Final Path is: {}", save_file_path);
-            Ok(save_file_path)
         }
-        Err(var_err) => Err(format!("Error in local data path value: {}", var_err)),
+        Err(e) => {
+            return Err(format!("Error when reading SaveGames path: {}", e));
+        }
     }
+
+    println!("Final Path is: {}", save_file_path);
+    Ok(save_file_path)
 }
 
 pub fn read_save_file() -> Result<Vec<u8>, String> {
@@ -345,7 +386,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::StageFlagList => SaveFileData {
             variable_name: "m_bStageFlagList".into(),
-            variable_name_simple: "Stage Flags".into(),
+            variable_name_simple: "Stages Unlocked".into(),
             offset: 0x34,
             int_type: SaveDataIntType::Arrayu8(LEVELS_COUNT),
             slot_base_add,
@@ -609,7 +650,7 @@ pub fn get_save_file_variable(req_data: SaveDataVar, slot: u8) -> SaveFileData {
         },
         SaveDataVar::JukeBoxUnlockFlagList => SaveFileData {
             variable_name: "m_bJukeBoxUnlockFlagList".into(),
-            variable_name_simple: "Jukebox Flag".into(),
+            variable_name_simple: "Jukebox Songs Unlocked".into(),
             offset: 0x5C2,
             int_type: SaveDataIntType::Arrayu8(83),
             slot_base_add,

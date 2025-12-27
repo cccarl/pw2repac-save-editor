@@ -1,6 +1,6 @@
 # Save file editor for Pac-Man World 2 Re-Pac
 
-This GUI program will read your save file for the game, allow you to modify it, and save those changes to the file used by the game. Keep in mind that the game will only read this file once when opening, not while the game is open. Windows only.
+This GUI program will read your save file for the game, allow you to modify it, and save those changes to that same file, which is used by the game. Keep in mind that the game will only read this file once when opening, not while the game is open. Windows and Linux supported, Linux tested on Pop!_OS and using steam.
 
 <img width="902" height="632" alt="Mani menu of the program" src="https://github.com/user-attachments/assets/ca7cda39-7665-42de-b5d6-f65071239b27" />
 

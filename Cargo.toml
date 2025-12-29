@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+dirs = "6.0.0"
 eframe = { version = "0.33.2", features = ["default"] }
 egui_extras = { version = "*", features = ["all_loaders"] }
 enum-iterator = "2.3.0"
 image = { version = "0.24", features = ["png"] }
+walkdir = "2.5.0"

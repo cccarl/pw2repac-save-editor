@@ -1,5 +1,12 @@
 use enum_iterator::all;
-use std::{env, fs, path::Path, str::from_utf8};
+use std::{
+    env,
+    ffi::OsStr,
+    fs,
+    path::{Path, PathBuf},
+    str::from_utf8,
+};
+use walkdir::WalkDir;
 
 use crate::{
     EXPECTED_SAVE_FILE_SIZE,
@@ -14,47 +21,60 @@ pub struct SFigureDisplayInfo {
     pub angle: f32,
 }
 
+enum PathType {
+    Windows,
+    Linux,
+}
+
 fn get_file_path() -> Result<String, String> {
     let pac_save_local_app_data_win = env::var("LOCALAPPDATA");
     match pac_save_local_app_data_win {
-        Ok(local_app_data_path_str) => get_final_path(local_app_data_path_str, false),
+        Ok(local_app_data_path_str) => get_final_path(local_app_data_path_str, PathType::Windows),
         Err(var_err) => {
             eprintln!("Error in local data path value: {}", var_err);
             println!("Trying linux path now");
             // try linux path now
-            let pac_save_path_linux = env::var_os("HOME");
+            let pac_save_path_linux = find_steam_install_folder_linux();
             match pac_save_path_linux {
-                Some(home_path) => {
-                    let home_to_string = home_path.to_str();
+                Some(steam_path) => {
+                    let home_to_string = steam_path.to_str();
                     match home_to_string {
-                        Some(home_str) => get_final_path(home_str.to_string(), true),
+                        Some(home_str) => get_final_path(home_str.to_string(), PathType::Linux),
                         None => Err(String::from(
                             "Could not parse the linux OS string to String!",
                         )),
                     }
                 }
-                None => Err("Linux HOME could not be found!".to_string()),
+                None => Err("<steamapps> folder could not be found!".to_string()),
             }
         }
     }
 }
 
-fn get_final_path(base_variable_path: String, is_linux: bool) -> Result<String, String> {
+fn find_steam_install_folder_linux() -> Option<PathBuf> {
+    let home_dir = dirs::home_dir()?;
+    println!("Starting search in: {:?}", home_dir);
+
+    for entry in WalkDir::new(home_dir).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+
+        if path.is_dir() && path.file_name() == Some(OsStr::new("steamapps")) {
+            return Some(path.to_path_buf());
+        }
+    }
+
+    None
+}
+
+fn get_final_path(base_variable_path: String, path_type: PathType) -> Result<String, String> {
     let local_data_path = Path::new(&base_variable_path);
-    let save_games_path = if !is_linux {
-        local_data_path
+    let save_games_path = match path_type {
+        PathType::Windows => local_data_path
             .join("BANDAI NAMCO Entertainment")
             .join("PAC-MAN WORLD2 Re-Pac")
             .join("Saved")
-            .join("SaveGames")
-    } else {
-        local_data_path
-            .join(".var")
-            .join("app")
-            .join("com.valvesoftware.Steam")
-            .join(".steam")
-            .join("steam")
-            .join("steamapps")
+            .join("SaveGames"),
+        PathType::Linux => local_data_path
             .join("compatdata")
             .join("2324290")
             .join("pfx")
@@ -66,7 +86,7 @@ fn get_final_path(base_variable_path: String, is_linux: bool) -> Result<String, 
             .join("BANDAI NAMCO Entertainment")
             .join("PAC-MAN WORLD2 Re-Pac")
             .join("Saved")
-            .join("SaveGames")
+            .join("SaveGames"),
     };
 
     println!(
